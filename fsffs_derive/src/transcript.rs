@@ -33,7 +33,7 @@ pub fn impl_transcript(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
     let name = input.ident;
     let expanded = quote! {
         impl #impl_generics fsffs::Tx for #name #ty_generics #where_clause {
-            fn read<A: fsffs::Arthur>(&self, ts: &mut A) {
+            fn read<A: fsffs::Sponge>(&self, ts: &mut A) {
                 #checks
             }
         }

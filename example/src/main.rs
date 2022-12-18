@@ -1,4 +1,4 @@
-use fsffs::{Arthur, Absorb, Msg, Proof, Tx};
+use fsffs::{Arthur, Absorb, Msg, Proof, Tx, Sponge};
 
 #[derive(Tx)]
 struct FieldElem {
@@ -35,7 +35,7 @@ impl Proof for Pf {
     type Statement = ();
     type Error = ();
 
-    fn verify<A: Arthur>(ts: &mut A, st: Msg<Self::Statement>, pf: Self::Proof) -> Result<(), ()> {
+    fn verify<S: Sponge>(ts: &mut Arthur<S>, st: Msg<Self::Statement>, pf: Self::Proof) -> Result<(), ()> {
         let v = ts.recv(pf.v);
         if v != 0 {
             let f = ts.recv(pf.f);

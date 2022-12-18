@@ -1,4 +1,4 @@
-use crate::{Arthur, Absorb, Msg, Tx};
+use crate::{Sponge, Absorb, Tx};
 
 use std::hash::Hash;
 
@@ -7,7 +7,7 @@ macro_rules! int_impl {
     ( $t:tt ) => {
         impl Absorb for $t {
             #[inline(always)]
-            fn absorb<A: Arthur>(&self, ts: &mut A) {
+            fn absorb<S: Sponge>(&self, ts: &mut S) {
                 ts.write(&self.to_le_bytes())
             }
         }
@@ -27,14 +27,14 @@ int_impl!(u64);
 int_impl!(u128);
 
 impl<T: Tx> Absorb for T {
-    fn absorb<A: Arthur>(&self, ts: &mut A) {
+    fn absorb<S: Sponge>(&self, ts: &mut S) {
         self.read(ts)
     }
 }
 
 impl Absorb for bool {
     #[inline(always)]
-    fn absorb<A: Arthur>(&self, ts: &mut A) {
+    fn absorb<S: Sponge>(&self, ts: &mut S) {
         ts.write(&[match self {
             true => 1,
             false => 0,
@@ -46,7 +46,7 @@ impl<T: Absorb> Absorb for Vec<T> {
     // the semantics of a list is its length
     // and the transitive semantics of all its members
     // (in the case of e.g. Vec<Msg<_>>) it is just the length
-    fn absorb<A: Arthur>(&self, ts: &mut A) {
+    fn absorb<S: Sponge>(&self, ts: &mut S) {
         // read the length
         let n = (self.len() as u64).to_le_bytes();
         n.hash(ts);
@@ -59,7 +59,7 @@ impl<T: Absorb> Absorb for Vec<T> {
 }
 
 impl<T: Absorb> Absorb for Option<T> {
-    fn absorb<A: Arthur>(&self, ts: &mut A) {
+    fn absorb<S: Sponge>(&self, ts: &mut S) {
         match self {
             None => false.absorb(ts), // indicate none
             Some(value) => {
@@ -71,10 +71,10 @@ impl<T: Absorb> Absorb for Option<T> {
 }
 
 impl<const N: usize, T: Absorb> Absorb for [T; N] {
-    fn absorb<H: Arthur>(&self, h: &mut H) {
+    fn absorb<S: Sponge>(&self, ts: &mut S) {
         // read every element
         for elem in self.iter() {
-            elem.absorb(h)
+            elem.absorb(ts)
         }
     }
 }

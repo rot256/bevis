@@ -1,16 +1,25 @@
-#[macro_use]
 extern crate fsffs_derive;
 
 pub use fsffs_derive::*;
 
-use std::hash::{Hash, Hasher};
+use serde::{Serialize, Deserialize};
+use std::{hash::{Hash, Hasher}};
 
 mod transcript;
+mod challenge;
 
 /// You should implement this only for primitive types.
 /// (e.g. curve points or field elements)
 pub trait Absorb {
-    fn absorb<A: Arthur>(&self, ts: &mut A);
+    fn absorb<S: Sponge>(&self, ts: &mut S);
+}
+
+/// A type which can be generated from the Sponge:
+/// a message from the verifier.
+/// 
+/// You should derive this for more complex types.
+pub trait Challenge {
+    fn sample<S: Sponge>(ts: &mut S) -> Self; 
 }
 
 // just like hotel california: you can check in, but you can never leave...
@@ -26,68 +35,73 @@ pub trait Absorb {
 //
 // On purpose
 // Maybe this should be called round...
-pub struct Msg<T> {
-    v: T,
+pub struct Msg<T>(T);
+
+// Messages serialize without overhead
+impl <T: Serialize> Serialize for Msg<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer {
+        self.0.serialize(serializer)
+    }
+}
+
+// Messages deserialize without overhead
+impl <'de, T: Deserialize<'de>> Deserialize<'de> for Msg<T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'de> {
+        T::deserialize(deserializer).map(|v| Msg(v))
+    }
 }
 
 /// Transcripts consists of structs where all 
 /// absorbable base-types are wrapped in one/more Msg.
 pub trait Tx {
-    fn read<A: Arthur>(&self, ts: &mut A);
+    fn read<S: Sponge>(&self, ts: &mut S);
 }
 
 impl<T: Absorb> Tx for Msg<T> {
     // absorbing a message is a no-op: 
     // the content is ignored until it is unwrapped.
-    fn read<A: Arthur>(&self, _ts: &mut A) {}
+    fn read<S: Sponge>(&self, _ts: &mut S) {}
 }
 
 // TODO: implement serialize/deserialize for Msg when T is.
 impl<T> From<T> for Msg<T> {
     fn from(v: T) -> Self {
-        Self { v }
+        Self(v)
     }
 }
 
-// MUST NOT BE CLONE OR COPY!
-pub trait Arthur: Hasher + Sized {
-    ///
-    /// This is the only way to unpack an Msg.
-    fn recv<T: Absorb>(&mut self, elem: Msg<T>) -> T {
-        elem.v.absorb(self); // note: it reads the inner value
-        elem.v
+pub trait Sponge: Hasher {
+    fn read(&mut self) -> u8;
+}
+
+pub struct Arthur<S: Sponge> {
+    sponge: S
+}
+
+impl <S: Sponge> Arthur<S> {
+    pub fn recv<T: Absorb>(&mut self, elem: Msg<T>) -> T {
+        elem.0.absorb(&mut self.sponge); // note: it reads the inner value
+        elem.0
+    }
+
+    pub fn send<T: Challenge>(&mut self) -> T {
+        T::sample(&mut self.sponge)
     }
 }
 
-//
-
-// Receiving should stop when it encounters a Msg.
-//
-// You can receive:
-//
-//  - Msg<Vec<T>> // receieves the entire vector, yields Vec<T>
-//  - Msg<Vec<Msg<T>> // receives the semantics of the vector, but allows random access to the inner vector, yields Vec<Msg<T>>
-//  - Msg<Vec<Msg<Vec<()>>> // yields Vec<Msg<Vec<()>>>
-//
-// but not:
-//
-//  - Vec<Msg<T>>
-//
-// as behavior of verifier may depend on e.g. Vec::len
-//
-// Msg<T> where T: Hash always implements Receieve
-//
-// Msg is not hash however.
-//
-// Implement Receieve for Msg<Vec<T>> where T: Receieve
-
+/*
 // Trait provided for convience to the prover
 pub trait Merlin: Hasher + Sized {
-    fn send<T: Hash>(&mut self, value: T) -> Msg<T> {
-        value.hash(self);
+    fn send<T: Absorb>(&mut self, value: T) -> Msg<T> {
+        value.absorb(self);
         value.into()
     }
 }
+*/
 
 pub trait Proof {
     type Statement: Hash; // entire statement is read up-front (i.e. no messages)
@@ -97,8 +111,8 @@ pub trait Proof {
     /// Requiring verify to work for any "Arthur" prevents it
     /// from depending on the "Merlin" part which
     /// is also implemented for the transcript hasher.
-    fn verify<A: Arthur>(
-        ts: &mut A,
+    fn verify<S: Sponge>(
+        ts: &mut Arthur<S>,
         st: Msg<Self::Statement>,
         pf: Self::Proof,
     ) -> Result<(), Self::Error>;

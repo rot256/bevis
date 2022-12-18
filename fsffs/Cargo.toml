@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 fsffs_derive = { path = "../fsffs_derive" }
+serde = "1"

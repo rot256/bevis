@@ -97,7 +97,7 @@ pub fn impl_absorb(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let name = input.ident;
     let expanded = quote! {
         impl #impl_generics fsffs::Absorb for #name #ty_generics #where_clause {
-            fn absorb<A: fsffs::Arthur>(&self, ts: &mut A) {
+            fn absorb<A: fsffs::Sponge>(&self, ts: &mut A) {
                 #checks
             }
         }
