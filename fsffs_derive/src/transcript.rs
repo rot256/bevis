@@ -20,8 +20,14 @@ pub fn impl_transcript(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
 
     // generate body of impl function
     let checks = match input.data {
-        Data::Union(ref data) => check_fields(fn_name, &Fields::Named(data.fields.clone())),
-        Data::Struct(ref data) => check_fields(fn_name, &data.fields),
+        Data::Union(_) =>
+            syn::Error::new(
+                fn_name.span(),
+                "transcript not implemented for union",
+            ).to_compile_error(),
+
+        Data::Struct(ref data) => hash_fields(fn_name, &data.fields),
+        
         Data::Enum(_) => syn::Error::new(
             fn_name.span(),
             "enums cannot implement transcript (derive absorb instead)",
@@ -33,7 +39,7 @@ pub fn impl_transcript(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
     let name = input.ident;
     let expanded = quote! {
         impl #impl_generics fsffs::Tx for #name #ty_generics #where_clause {
-            fn read<A: fsffs::Sponge>(&self, ts: &mut A) {
+            fn read<H: fsffs::Hasher>(&self, __hsh: &mut H) {
                 #checks
             }
         }

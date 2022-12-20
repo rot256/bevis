@@ -4,4 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-fsffs = { path = "../fsffs" }
+fsffs = { path = "../fsffs" , features = ["enable_serde"] }
+serde = { version = "1.0", features = ["derive"] }

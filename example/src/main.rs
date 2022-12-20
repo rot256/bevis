@@ -1,8 +1,16 @@
-use fsffs::{Arthur, Absorb, Msg, Proof, Tx, Sponge};
+use fsffs::{Arthur, Absorb, Msg, Proof, Tx, Sponge, Challenge};
 
-#[derive(Tx)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Tx, Serialize, Deserialize)]
 struct FieldElem {
     k: Msg<[u32; 4]>,
+}
+
+#[derive(Challenge)]
+struct CC {
+    v: u32,
+    c: u8
 }
 
 #[derive(Tx)]
@@ -35,7 +43,7 @@ impl Proof for Pf {
     type Statement = ();
     type Error = ();
 
-    fn verify<S: Sponge>(ts: &mut Arthur<S>, st: Msg<Self::Statement>, pf: Self::Proof) -> Result<(), ()> {
+    fn interact<S: Sponge>(ts: &mut Arthur<S>, st: &Self::Statement, pf: Self::Proof) -> Result<(), ()> {
         let v = ts.recv(pf.v);
         if v != 0 {
             let f = ts.recv(pf.f);

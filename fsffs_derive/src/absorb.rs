@@ -13,9 +13,12 @@ pub fn impl_absorb(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     fn body(data: Data) -> TokenStream {
         let fn_name = quote! { fsffs::Absorb::absorb };
         match data {
-            Data::Union(ref data) => check_fields(fn_name, &Fields::Named(data.fields.clone())),
+            Data::Union(_) => syn::Error::new(
+                fn_name.span(),
+                "absorb not implemented for union",
+            ).to_compile_error(),
 
-            Data::Struct(ref data) => check_fields(fn_name, &data.fields),
+            Data::Struct(ref data) => hash_fields(fn_name, &data.fields),
 
             Data::Enum(ref data) => {
                 // no need to encode empty enum
@@ -35,18 +38,17 @@ pub fn impl_absorb(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     match variant.fields {
                         Fields::Named(ref fields) => {
                             let names = fields.named.iter().map(|f| {
-                                println!("{:?}", &f.ident);
                                 &f.ident
                             });
 
                             let checks = fields.named.iter().map(|f| {
                                 let name = &f.ident;
-                                quote! { #fn_name(#name, ts); }
+                                quote! { #fn_name(#name, __hsh); }
                             });
 
                             quote! {
                                 Self::#ident{#(#names,)*} => {
-                                    #fn_name(#varid, ts);
+                                    #fn_name(#varid, __hsh);
                                     #(#checks)*
                                 },
                             }
@@ -59,12 +61,12 @@ pub fn impl_absorb(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                                 .map(|(i, _f)| format_ident!("n{}", i));
 
                             let checks = names.clone().map(|name| {
-                                quote! { #fn_name(#name, ts); }
+                                quote! { #fn_name(#name, __hsh); }
                             });
 
                             quote! {
                                 Self::#ident(#(#names,)*) => {
-                                    #fn_name(#varid, ts);
+                                    #fn_name(#varid, __hsh);
                                     #(#checks)*
                                 },
                             }
@@ -97,7 +99,7 @@ pub fn impl_absorb(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let name = input.ident;
     let expanded = quote! {
         impl #impl_generics fsffs::Absorb for #name #ty_generics #where_clause {
-            fn absorb<A: fsffs::Sponge>(&self, ts: &mut A) {
+            fn absorb<H: fsffs::Hasher>(&self, __hsh: &mut H) {
                 #checks
             }
         }

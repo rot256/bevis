@@ -5,4 +5,7 @@ edition = "2021"
 
 [dependencies]
 fsffs_derive = { path = "../fsffs_derive" }
-serde = "1"
+serde = {version = "1", optional = true}
+
+[features]
+enable_serde = ["serde"]

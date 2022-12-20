@@ -10,19 +10,24 @@ use syn::{
 
 mod absorb;
 mod transcript;
+mod challenge;
 
-// derive of the absorb
+// derive of Absorb
 use absorb::impl_absorb;
 
-// derive of the Transcript
+// derive of Transcript
 use transcript::impl_transcript;
 
-fn check_fields(fn_name: TokenStream, fields: &Fields) -> TokenStream {
+// derieve of Challenge
+use challenge::impl_challenge;
+
+// helper function (used by Absorb and Transcript)
+fn hash_fields(fn_name: TokenStream, fields: &Fields) -> TokenStream {
     match fields {
         Fields::Named(ref fields) => {
             let children = fields.named.iter().map(|f| {
                 let name = &f.ident;
-                quote! { #fn_name(&self.#name, ts); }
+                quote! { #fn_name(&self.#name, __hsh); }
             });
             quote! {
                 #(#children)*
@@ -31,7 +36,7 @@ fn check_fields(fn_name: TokenStream, fields: &Fields) -> TokenStream {
         Fields::Unnamed(ref fields) => {
             let children = fields.unnamed.iter().enumerate().map(|(i, _f)| {
                 let index = Index::from(i);
-                quote! { #fn_name(&self.#index, ts); }
+                quote! { #fn_name(&self.#index, __hsh); }
             });
             quote! {
                 #(#children)*
@@ -51,4 +56,9 @@ pub fn derive_transcript(input: proc_macro::TokenStream) -> proc_macro::TokenStr
 #[proc_macro_derive(Absorb)]
 pub fn derive_absorb(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     impl_absorb(input)
+}
+
+#[proc_macro_derive(Challenge)]
+pub fn derive_challenge(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    impl_challenge(input)
 }
