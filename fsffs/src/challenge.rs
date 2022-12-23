@@ -16,6 +16,13 @@ macro_rules! challenge_int_impl {
     };
 }
 
+impl Challenge for bool {
+    fn sample<S: Sponge>(ts: &mut S) -> Self {
+        let v: u8 = u8::sample(ts);
+        (v & 1) == 1
+    }
+}
+
 impl Challenge for u8 {
     fn sample<S: Sponge>(ts: &mut S) -> Self {
         ts.read()

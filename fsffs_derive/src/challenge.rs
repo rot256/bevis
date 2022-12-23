@@ -21,49 +21,48 @@ pub fn impl_challenge(input: proc_macro::TokenStream) -> proc_macro::TokenStream
             Data::Union(_) => 
                 syn::Error::new(
                     fn_name.span(),
-                    "cannot sample union",
+                    "cannot sample union: variants might have different samplers.",
                 ).to_compile_error(),
 
             Data::Enum(_) => 
+                // uniform distribution might not be ideal, 
+                // e.g. KKW18 uses a skewed distribution.
                 syn::Error::new(
                     fn_name.span(),
-                    "cannot sample enum (yet)",
+                    "cannot sample enum (yet), it remains to decide what/how the dist. over variants should be chosen.",
                 ).to_compile_error(),
 
             Data::Struct(ref data) => {
                 match data.fields {
                     Fields::Named(ref fields) => {
-                        let names = fields.named.iter().map(|f| {
-                            &f.ident
-                        });
-
-                        let children = names.clone().map(|name| {
-                            quote! { let #name = fsffs::Challenge::sample(__sampler); }
+                        let children = fields.named.iter().map(|field| {
+                            let name = &field.ident;
+                            quote! { 
+                                #name: fsffs::Challenge::sample(s)
+                            }
                         });
                      
                         quote! {
-                            #(#children)*
-                            Self { #(#names,)* }
+                            Self { #(#children,)* }
                         }
                     }
                     Fields::Unnamed(ref fields) => {
-                        let names = fields
-                            .unnamed
-                            .iter()
-                            .enumerate()
-                            .map(|(i, _f)| format_ident!("n{}", i));
-
-                        let children = names.clone().map(|name| {
-                                quote! { let #name = fsffs::Challenge::sample(__sampler); }
+                        let children = fields.unnamed.iter().map(|_field| {
+                            quote! { 
+                                fsffs::Challenge::sample(s)
+                            }
                         });
-
+                       
                         quote! {
-                            #(#children)*
-                            Self ( #(#names,)* )
+                            Self ( #(#children,)* )
                         }
                     }
                     Fields::Unit => {
-                        quote! {} // nothing to do
+                        // nothing to do: 
+                        // the sample space contains a single value
+                        quote! {
+                            Self
+                        } 
                     }
                 }
             }
@@ -77,7 +76,7 @@ pub fn impl_challenge(input: proc_macro::TokenStream) -> proc_macro::TokenStream
     let name = input.ident;
     let expanded = quote! {
         impl #impl_generics fsffs::Challenge for #name #ty_generics #where_clause {
-            fn sample<S: fsffs::Sponge>(__sampler: &mut S) -> Self {
+            fn sample<S: fsffs::Sponge>(s: &mut S) -> Self {
                 #sampler
             }
         }

@@ -27,7 +27,7 @@ fn hash_fields(fn_name: TokenStream, fields: &Fields) -> TokenStream {
         Fields::Named(ref fields) => {
             let children = fields.named.iter().map(|f| {
                 let name = &f.ident;
-                quote! { #fn_name(&self.#name, __hsh); }
+                quote! { #fn_name(&self.#name, h); }
             });
             quote! {
                 #(#children)*
@@ -36,14 +36,14 @@ fn hash_fields(fn_name: TokenStream, fields: &Fields) -> TokenStream {
         Fields::Unnamed(ref fields) => {
             let children = fields.unnamed.iter().enumerate().map(|(i, _f)| {
                 let index = Index::from(i);
-                quote! { #fn_name(&self.#index, __hsh); }
+                quote! { #fn_name(&self.#index, h); }
             });
             quote! {
                 #(#children)*
             }
         }
         Fields::Unit => {
-            quote! {} // nothing to do
+            quote! {} // nothing to do: no fields to hash
         }
     }
 }

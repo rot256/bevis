@@ -13,28 +13,29 @@ pub fn impl_absorb(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     fn body(data: Data) -> TokenStream {
         let fn_name = quote! { fsffs::Absorb::absorb };
         match data {
-            Data::Union(_) => syn::Error::new(
-                fn_name.span(),
-                "absorb not implemented for union",
-            ).to_compile_error(),
+            // might be able to do this safely by inspecting bytes
+            // (however, it must be stable across platforms)
+            Data::Union(_) => 
+                syn::Error::new(
+                    fn_name.span(),
+                    "absorb not implemented for union: absorb may depend on variant",
+                ).to_compile_error(),
 
-            Data::Struct(ref data) => hash_fields(fn_name, &data.fields),
+            Data::Struct(ref data) => 
+                hash_fields(fn_name, &data.fields),
 
             Data::Enum(ref data) => {
-                // no need to encode empty enum
+                // no need to absorb empty enum
                 if data.variants.len() == 0 {
                     return quote! {};
                 }
 
-                // there is space
+                // there is space: I can't forsee needing more than 2^31
                 assert!(data.variants.len() < (1 << 31));
 
                 // handle each variant
-                let arms = data.variants.iter().enumerate().map(|(i, variant)| {
-                    let varid: TokenStream = format!("&{}u32", i).parse().unwrap();
+                let chls = data.variants.iter().map(|variant| {
                     let ident = &variant.ident;
-
-                    // not sound, need sep for every variant, consider the trivial case where it is a bool.
                     match variant.fields {
                         Fields::Named(ref fields) => {
                             let names = fields.named.iter().map(|f| {
@@ -43,13 +44,13 @@ pub fn impl_absorb(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
                             let checks = fields.named.iter().map(|f| {
                                 let name = &f.ident;
-                                quote! { #fn_name(#name, __hsh); }
+                                quote! { #fn_name(#name, h); }
                             });
 
                             quote! {
                                 Self::#ident{#(#names,)*} => {
-                                    #fn_name(#varid, __hsh);
-                                    #(#checks)*
+                                    #(#checks)*;
+                                    ()
                                 },
                             }
                         }
@@ -61,26 +62,69 @@ pub fn impl_absorb(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                                 .map(|(i, _f)| format_ident!("n{}", i));
 
                             let checks = names.clone().map(|name| {
-                                quote! { #fn_name(#name, __hsh); }
+                                quote! { #fn_name(#name, h); }
                             });
 
                             quote! {
                                 Self::#ident(#(#names,)*) => {
-                                    #fn_name(#varid, __hsh);
-                                    #(#checks)*
+                                    #(#checks)*;
+                                    ()
                                 },
                             }
                         }
                         Fields::Unit => {
-                            quote! {}
+                            quote! {
+                                Self::#ident => { () },
+                            }
                         }
                     }
                 });
 
-                // match over variants
+                let encs = data.variants.iter().enumerate().map(|(i, variant)| {
+                    let ident = &variant.ident;
+                    match variant.fields {
+                        Fields::Named(_) => {
+                            quote! {
+                                Self::#ident{ .. } => { #i }
+                            }
+                        }
+                        Fields::Unnamed(_) => {
+                            quote! {
+                                Self::#ident( .. ) => { #i }
+                            }
+                        }
+                        Fields::Unit => {
+                            quote! {
+                                Self::#ident => #i,
+                            }
+                        }
+                    }
+                });
+
+                // choose smallest possible integer type
+                let varid = {
+                    let n = data.variants.len() as u64;
+                    if n <= u8::MAX.into() {
+                        quote! { let varid: u8 = match self { #(#encs)* } as u8; }
+                    } else if n <= u16::MAX.into() {
+                        quote! { let varid: u16 = match self { #(#encs)* } as u16; }
+                    } else if n <= u32::MAX.into() {
+                        quote! { let varid: u32 = match self { #(#encs)* } as u32; }
+                    } else {
+                        quote! { let varid: u64 = match self { #(#encs)* } as u64; }
+                    }
+                };
+
                 quote! {
+                    // encode variant
+                    #varid
+
+                    // absorb variant encoding
+                    #fn_name(&varid, h);
+
+                    // encode child
                     match self {
-                        #(#arms)*
+                        #(#chls)*
                     }
                 }
             }
@@ -99,7 +143,7 @@ pub fn impl_absorb(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let name = input.ident;
     let expanded = quote! {
         impl #impl_generics fsffs::Absorb for #name #ty_generics #where_clause {
-            fn absorb<H: fsffs::Hasher>(&self, __hsh: &mut H) {
+            fn absorb<H: fsffs::Hasher>(&self, h: &mut H) {
                 #checks
             }
         }

@@ -13,6 +13,17 @@ struct CC {
     c: u8
 }
 
+#[derive(Challenge)]
+struct CCC {
+    v: [u8; 128],
+    c: u8
+}
+
+
+
+#[derive(Challenge)]
+struct CCCC;
+
 #[derive(Tx)]
 struct Round1 {
     v: Msg<u32>,
@@ -36,6 +47,13 @@ struct Pf {
     f: Msg<Round1>,
     v: Msg<u32>,
     w: Msg<u8>,
+}
+
+#[derive(Absorb)]
+enum V {
+    A,
+    B,
+    C
 }
 
 impl Proof for Pf {
