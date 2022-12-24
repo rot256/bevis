@@ -4,7 +4,7 @@ pub fn impl_transcript(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
     fn add_trait_bounds(mut generics: Generics) -> Generics {
         for param in &mut generics.params {
             if let GenericParam::Type(ref mut type_param) = *param {
-                type_param.bounds.push(parse_quote!(fsffs::Tx));
+                type_param.bounds.push(parse_quote!(bevis::Tx));
             }
         }
         generics
@@ -16,18 +16,15 @@ pub fn impl_transcript(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     // ensure that the children are also Msg
-    let fn_name = quote! { fsffs::Tx::read };
+    let fn_name = quote! { bevis::Tx::read };
 
     // generate body of impl function
     let checks = match input.data {
-        Data::Union(_) =>
-            syn::Error::new(
-                fn_name.span(),
-                "transcript not implemented for union",
-            ).to_compile_error(),
+        Data::Union(_) => syn::Error::new(fn_name.span(), "transcript not implemented for union")
+            .to_compile_error(),
 
         Data::Struct(ref data) => hash_fields(fn_name, &data.fields),
-        
+
         Data::Enum(_) => syn::Error::new(
             fn_name.span(),
             "enums cannot implement transcript (derive absorb instead)",
@@ -38,8 +35,8 @@ pub fn impl_transcript(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
     // implement transcript
     let name = input.ident;
     let expanded = quote! {
-        impl #impl_generics fsffs::Tx for #name #ty_generics #where_clause {
-            fn read<H: fsffs::Hasher>(&self, h: &mut H) {
+        impl #impl_generics bevis::Tx for #name #ty_generics #where_clause {
+            fn read<H: bevis::Hasher>(&self, h: &mut H) {
                 #checks
             }
         }

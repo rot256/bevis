@@ -1,0 +1,16 @@
+[package]
+name = "bevis"
+version = "0.1.0"
+edition = "2021"
+authors = ["Mathias Hall-Andersen"]
+
+[dependencies]
+bevis_derive = { path = "../bevis_derive" }
+serde = {version = "1", optional = true}
+
+[features]
+enable_serde = ["serde"]
+
+[dev-dependencies]
+serde = "1" 
+compiletest_rs = "0.9"

@@ -1,8 +1,11 @@
-use bevis::{Arthur, Absorb, Msg, Proof, Tx, Sponge, Challenge};
+#![allow(clippy::all)]
+#![allow(dead_code)]
 
-use serde::{Serialize, Deserialize};
+use bevis::{Absorb, Arthur, Challenge, Msg, Proof, Sponge, Tx};
 
-#[derive(Tx, Serialize, Deserialize)]
+// use serde::{Serialize, Deserialize};
+
+#[derive(Tx)]
 struct FieldElem {
     k: Msg<[u32; 4]>,
 }
@@ -10,13 +13,13 @@ struct FieldElem {
 #[derive(Challenge)]
 struct CC {
     v: u32,
-    c: u8
+    c: u8,
 }
 
 #[derive(Challenge)]
 struct CCC {
     v: [u8; 128],
-    c: u8
+    c: u8,
 }
 
 #[derive(Challenge)]
@@ -51,7 +54,7 @@ struct Pf {
 enum V {
     A,
     B,
-    C
+    C,
 }
 
 impl Proof for Pf {
@@ -59,10 +62,14 @@ impl Proof for Pf {
     type Statement = ();
     type Error = ();
 
-    fn interact<S: Sponge>(ts: &mut Arthur<S>, st: &Self::Statement, pf: Self::Proof) -> Result<(), ()> {
+    fn interact<S: Sponge>(
+        ts: &mut Arthur<S>,
+        _st: &Self::Statement,
+        pf: Self::Proof,
+    ) -> Result<(), ()> {
         let v = ts.recv(pf.v);
         if v != 0 {
-            let f = ts.recv(pf.f);
+            let _f = ts.recv(pf.f);
             println!("only read fields conditionally, still sound.");
         }
 
@@ -70,7 +77,5 @@ impl Proof for Pf {
     }
 }
 
-fn main() {
-    // pf.verify()
-    println!("Hello, world!");
-}
+#[test]
+fn test() {}

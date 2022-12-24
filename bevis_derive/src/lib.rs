@@ -9,8 +9,8 @@ use syn::{
 };
 
 mod absorb;
-mod transcript;
 mod challenge;
+mod transcript;
 
 // derive of Absorb
 use absorb::impl_absorb;

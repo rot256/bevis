@@ -4,25 +4,24 @@ pub fn impl_absorb(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     fn add_trait_bounds(mut generics: Generics) -> Generics {
         for param in &mut generics.params {
             if let GenericParam::Type(ref mut type_param) = *param {
-                type_param.bounds.push(parse_quote!(fsffs::Absorb));
+                type_param.bounds.push(parse_quote!(bevis::Absorb));
             }
         }
         generics
     }
 
     fn body(data: Data) -> TokenStream {
-        let fn_name = quote! { fsffs::Absorb::absorb };
+        let fn_name = quote! { bevis::Absorb::absorb };
         match data {
             // might be able to do this safely by inspecting bytes
             // (however, it must be stable across platforms)
-            Data::Union(_) => 
-                syn::Error::new(
-                    fn_name.span(),
-                    "absorb not implemented for union: absorb may depend on variant",
-                ).to_compile_error(),
+            Data::Union(_) => syn::Error::new(
+                fn_name.span(),
+                "absorb not implemented for union: absorb may depend on variant",
+            )
+            .to_compile_error(),
 
-            Data::Struct(ref data) => 
-                hash_fields(fn_name, &data.fields),
+            Data::Struct(ref data) => hash_fields(fn_name, &data.fields),
 
             Data::Enum(ref data) => {
                 // no need to absorb empty enum
@@ -38,9 +37,7 @@ pub fn impl_absorb(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                     let ident = &variant.ident;
                     match variant.fields {
                         Fields::Named(ref fields) => {
-                            let names = fields.named.iter().map(|f| {
-                                &f.ident
-                            });
+                            let names = fields.named.iter().map(|f| &f.ident);
 
                             let checks = fields.named.iter().map(|f| {
                                 let name = &f.ident;
@@ -142,8 +139,8 @@ pub fn impl_absorb(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // implement Msg for the parent
     let name = input.ident;
     let expanded = quote! {
-        impl #impl_generics fsffs::Absorb for #name #ty_generics #where_clause {
-            fn absorb<H: fsffs::Hasher>(&self, h: &mut H) {
+        impl #impl_generics bevis::Absorb for #name #ty_generics #where_clause {
+            fn absorb<H: bevis::Hasher>(&self, h: &mut H) {
                 #checks
             }
         }

@@ -1,7 +1,8 @@
 [package]
-name = "fsffs_derive"
+name = "bevis_derive"
 version = "0.1.0"
 edition = "2021"
+authors = ["Mathias Hall-Andersen"]
 
 [lib]
 proc-macro = true

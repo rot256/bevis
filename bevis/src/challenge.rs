@@ -25,11 +25,12 @@ impl Challenge for bool {
 
 impl Challenge for u8 {
     fn sample<S: Sponge>(ts: &mut S) -> Self {
-        ts.read()
+        ts.squeeze()
     }
 }
 
-impl <const N: usize, T: Challenge + Default + Copy> Challenge for [T; N] {
+impl<const N: usize, T: Challenge + Default + Copy> Challenge for [T; N] {
+    #[allow(clippy::needless_range_loop)]
     fn sample<S: Sponge>(ts: &mut S) -> Self {
         let mut res: [T; N] = [T::default(); N];
         for i in 0..N {
