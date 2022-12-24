@@ -3,8 +3,7 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-
-  test_phaser:
+  bevis:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -39,7 +38,7 @@ jobs:
           cargo fmt -- --check
           cargo clippy -- -D warnings
 
-      - name: Test Bevis
+      - name: Test evis
         run: |
           cd bevis
           cargo check
