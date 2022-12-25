@@ -3,7 +3,7 @@
 
 use bevis::{Absorb, Arthur, Challenge, Msg, Proof, Sponge, Tx};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Tx, Serialize, Deserialize)]
 struct FieldElem {
@@ -58,8 +58,6 @@ enum V {
     C,
 }
 
-
-
 impl Proof for Pf {
     type Statement = ();
     type Error = ();
@@ -67,11 +65,7 @@ impl Proof for Pf {
 
     const NAME: &'static [u8] = b"Test Proof";
 
-    fn interact<S: Sponge>(
-        self,
-        _st: &Self::Statement,
-        ts: &mut Arthur<S>,
-    ) -> Result<(), ()> {
+    fn interact<S: Sponge>(self, _st: &Self::Statement, ts: &mut Arthur<S>) -> Result<(), ()> {
         let v = ts.recv(self.v);
         if v != 0 {
             let _f = ts.recv(self.f);
@@ -83,9 +77,4 @@ impl Proof for Pf {
 }
 
 #[test]
-fn test() {
-
-
-
-
-}
+fn test() {}

@@ -36,8 +36,8 @@ pub trait Challenge {
 /// you can check in, but you can never leave...
 pub struct Msg<T: Absorb>(T);
 
-// Clone is provided for convience, however, 
-// if you find yourself cloning proofs 
+// Clone is provided for convience, however,
+// if you find yourself cloning proofs
 // you are probably doing something wrong.
 impl<T: Clone + Absorb> Clone for Msg<T> {
     fn clone(&self) -> Self {
@@ -93,56 +93,55 @@ pub trait Sampler {
 /// A "Sponge" enables both hashing and sampling (squeezing)
 pub trait Sponge: Hasher + Sampler + Sized {
     ///
-    /// An implementation overwriting this 
-    /// 
+    /// An implementation overwriting this
+    ///
     /// In-order to verify a statement it must be absorbable,
     /// note that sub-protocols do not need absorable statements.
-    /// 
+    ///
     /// This method cannot be overwritten since Arthur has no public constructor.
-    fn verify<P: Proof> (
+    fn verify<P: Proof>(
         &mut self,
         st: &P::Statement,
         pf: P,
-    ) -> Result<P::Result, <P as Proof>::Error> where P::Statement: Absorb {
+    ) -> Result<P::Result, <P as Proof>::Error>
+    where
+        P::Statement: Absorb,
+    {
         // oracle seperation
         P::NAME.absorb(self);
-        
+
         // read the statement
         st.absorb(self);
 
         // create Arthur instance
         // (enabling the interaction to receive Msg<T>)
-        let mut arthur = Arthur {
-            sponge: self
-        };
+        let mut arthur = Arthur { sponge: self };
 
         // run the interaction
-        pf.interact(
-            st, 
-            &mut arthur,
-        )
+        pf.interact(st, &mut arthur)
     }
 
     /// Provide for convience:
     /// Makes it easier to simulate the interaction with the verifier to create a proof.
-    /// 
+    ///
     /// This method cannot be overwritten since Merlin has no public constructor.
     fn prove<'a, P: Proof, F: FnOnce(&P::Statement, &mut Merlin<'a, Self>) -> P>(
         &'a mut self,
         st: &P::Statement,
         prover: F,
-    ) -> P where P::Statement: Absorb {
+    ) -> P
+    where
+        P::Statement: Absorb,
+    {
         // oracle seperation
         P::NAME.absorb(self);
-                
+
         // read the statement
         st.absorb(self);
 
         // create Merlin instance
         // (providing a more convient way to construct Msg<T>)
-        let mut merlin =  Merlin {
-            sponge: self
-        };
+        let mut merlin = Merlin { sponge: self };
 
         // run the prover to obtain the proof
         prover(&st, &mut merlin)
@@ -186,7 +185,7 @@ impl<'a, S: Sponge> Merlin<'a, S> {
 }
 
 /// A proof is a transcript, meaning it consists of:
-/// 
+///
 /// - Msg's messages.
 /// - Other transcripts.
 pub trait Proof: Tx {
@@ -198,18 +197,18 @@ pub trait Proof: Tx {
     /// It can be chosen arbitarily.
     const NAME: &'static [u8];
 
-    /// You CANNOT invoke this method directly 
+    /// You CANNOT invoke this method directly
     /// (because Arthur does not have a public constructor),
-    /// instead you must use .verify. 
-    /// 
+    /// instead you must use .verify.
+    ///
     /// However, you CAN invoke this "interact" method from other "interact" methods.
     /// This enables safely composing sub-protocols without comitting to the intermediate statements
     /// and domain seperators.
-    /// 
+    ///
     /// Note that the statement is a reference.
     fn interact<'a, S: Sponge>(
         self,
         st: &Self::Statement,
-        ts: &mut Arthur<'a, S>
+        ts: &mut Arthur<'a, S>,
     ) -> Result<Self::Result, Self::Error>;
 }
