@@ -144,7 +144,7 @@ pub trait Sponge: Hasher + Sampler + Sized {
         let mut merlin = Merlin { sponge: self };
 
         // run the prover to obtain the proof
-        prover(&st, &mut merlin)
+        prover(st, &mut merlin)
     }
 }
 
@@ -206,9 +206,9 @@ pub trait Proof: Tx {
     /// and domain seperators.
     ///
     /// Note that the statement is a reference.
-    fn interact<'a, S: Sponge>(
+    fn interact<S: Sponge>(
         self,
         st: &Self::Statement,
-        ts: &mut Arthur<'a, S>,
+        ts: &mut Arthur<'_, S>,
     ) -> Result<Self::Result, Self::Error>;
 }
