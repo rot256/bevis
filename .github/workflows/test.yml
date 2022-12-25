@@ -34,17 +34,14 @@ jobs:
 
       - name: Lint Bevis
         run: |
-          cd bevis
           cargo fmt -- --check
           cargo clippy -- -D warnings
 
       - name: Test evis
         run: |
-          cd bevis
           cargo check
           cargo test --all
 
       - name: Build Release Bevis
         run: |
-          cd bevis
           cargo build --release

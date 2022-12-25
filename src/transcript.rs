@@ -1,6 +1,8 @@
 use crate::{Absorb, Tx};
 
-use std::hash::Hasher;
+use core::hash::Hasher;
+
+use alloc::vec::Vec;
 
 #[macro_export]
 macro_rules! int_impl {
@@ -49,7 +51,15 @@ impl Absorb for bool {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl<T: Absorb> Absorb for Vec<T> {
+    fn absorb<H: Hasher>(&self, h: &mut H) {
+        let s: &[T] = &self[..];
+        s.absorb(h)
+    }
+}
+
+impl<T: Absorb> Absorb for [T] {
     fn absorb<H: Hasher>(&self, h: &mut H) {
         // read the length
         // TOOD: wait for https://github.com/rust-lang/rust/issues/96762

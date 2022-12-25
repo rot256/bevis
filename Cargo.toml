@@ -5,11 +5,13 @@ edition = "2021"
 authors = ["Mathias Hall-Andersen"]
 
 [dependencies]
-bevis_derive = { path = "../bevis_derive" }
+bevis_derive = { path = "bevis_derive" }
 serde = {version = "1", optional = true}
 
 [features]
-enable_serde = ["serde"]
+default = ["serde", "alloc"]
+serde = ["dep:serde"]
+alloc = []
 
 [dev-dependencies]
 serde = "1" 
