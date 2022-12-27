@@ -6,7 +6,8 @@ macro_rules! challenge_int_impl {
         impl Challenge for $t {
             #[inline(always)]
             fn sample<S: Sampler>(ts: &mut S) -> Self {
-                let buf = <[u8; $n]>::sample(ts);
+                let mut buf = [0u8; $n];
+                ts.read(&mut buf);
                 Self::from_le_bytes(buf)
             }
         }
@@ -20,12 +21,6 @@ impl Challenge for bool {
     }
 }
 
-impl Challenge for u8 {
-    fn sample<S: Sampler>(ts: &mut S) -> Self {
-        ts.sample()
-    }
-}
-
 impl<const N: usize, T: Challenge + Default + Copy> Challenge for [T; N] {
     fn sample<S: Sampler>(ts: &mut S) -> Self {
         let mut res: [T; N] = [T::default(); N];
@@ -36,6 +31,7 @@ impl<const N: usize, T: Challenge + Default + Copy> Challenge for [T; N] {
     }
 }
 
+challenge_int_impl!(u8, 1);
 challenge_int_impl!(u16, 2);
 challenge_int_impl!(u32, 4);
 challenge_int_impl!(u64, 8);

@@ -1,36 +1,32 @@
-use crate::{Absorb, Tx};
+use crate::{Absorb, Hasher, Tx};
 
-use core::hash::Hasher;
-
+#[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
 #[macro_export]
-macro_rules! int_impl {
+macro_rules! absorb_int_impl {
     ( $t:tt ) => {
         impl Absorb for $t {
             #[inline(always)]
             fn absorb<H: Hasher>(&self, h: &mut H) {
-                // this cannot use the provided Hasher impl,
-                // since those are machine endian dependent.
                 h.write(&self.to_le_bytes())
             }
         }
     };
 }
 
-int_impl!(i8);
-int_impl!(i16);
-int_impl!(i32);
-int_impl!(i64);
-int_impl!(i128);
+absorb_int_impl!(i8);
+absorb_int_impl!(i16);
+absorb_int_impl!(i32);
+absorb_int_impl!(i64);
+absorb_int_impl!(i128);
 
-int_impl!(u8);
-int_impl!(u16);
-int_impl!(u32);
-int_impl!(u64);
-int_impl!(u128);
+absorb_int_impl!(u8);
+absorb_int_impl!(u16);
+absorb_int_impl!(u32);
+absorb_int_impl!(u64);
+absorb_int_impl!(u128);
 
-// Tx always more restrictive than Absorb
 impl<T: Tx> Absorb for T {
     fn absorb<H: Hasher>(&self, h: &mut H) {
         self.read(h)
@@ -44,15 +40,14 @@ impl Absorb for () {
 impl Absorb for bool {
     #[inline(always)]
     fn absorb<H: Hasher>(&self, h: &mut H) {
-        h.write_u8(match self {
-            true => 1,
-            false => 0,
-        });
+        let bit: u8 = if *self { 1 } else { 0 };
+        h.write(&[bit]);
     }
 }
 
 #[cfg(feature = "alloc")]
 impl<T: Absorb> Absorb for Vec<T> {
+    #[inline(always)]
     fn absorb<H: Hasher>(&self, h: &mut H) {
         let s: &[T] = &self[..];
         s.absorb(h)
@@ -88,7 +83,7 @@ impl<T: Absorb> Absorb for Option<T> {
 impl<A: Absorb, B: Absorb> Absorb for Result<A, B> {
     fn absorb<H: Hasher>(&self, h: &mut H) {
         // read if Ok/Err
-        self.is_err().absorb(h);
+        self.is_ok().absorb(h);
 
         // read inner value (if present)
         match self {
@@ -100,7 +95,8 @@ impl<A: Absorb, B: Absorb> Absorb for Result<A, B> {
 
 impl<const N: usize, T: Absorb> Absorb for [T; N] {
     fn absorb<H: Hasher>(&self, h: &mut H) {
-        // read every element (the length is fixed)
+        // read every element 
+        // (the length is fixed so no need to include it)
         for elem in self.iter() {
             elem.absorb(h)
         }

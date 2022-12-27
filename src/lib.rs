@@ -8,14 +8,16 @@ extern crate bevis_derive;
 
 pub use bevis_derive::*;
 
-pub use core::hash::Hasher;
-
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 mod challenge;
 
 mod transcript;
+
+pub trait Hasher {
+    fn write(&mut self, buf: &[u8]);
+}
 
 /// You should implement this only for primitive types.
 /// (e.g. curve points or field elements)
@@ -35,15 +37,6 @@ pub trait Challenge {
 /// Just like hotel california:
 /// you can check in, but you can never leave...
 pub struct Msg<T: Absorb>(T);
-
-// Clone is provided for convience, however,
-// if you find yourself cloning proofs
-// you are probably doing something wrong.
-impl<T: Clone + Absorb> Clone for Msg<T> {
-    fn clone(&self) -> Self {
-        Msg(self.0.clone())
-    }
-}
 
 // Messages serialize without overhead
 #[cfg(feature = "serde")]
@@ -74,8 +67,11 @@ pub trait Tx {
 }
 
 impl<T: Absorb> Tx for Msg<T> {
-    // absorbing a message is a no-op:
-    // the content is ignored until it is unwrapped.
+    /// Absorbing a message is a no-op:
+    /// the content is ignored until it is received.
+    /// 
+    /// This makes it easy to compose proofs and 
+    /// does not violate soundness guarantees.
     fn read<H: Hasher>(&self, _ts: &mut H) {}
 }
 
@@ -87,7 +83,7 @@ impl<T: Absorb> From<T> for Msg<T> {
 }
 
 pub trait Sampler {
-    fn sample(&mut self) -> u8;
+    fn read(&mut self, buf: &mut [u8]);
 }
 
 /// A "Sponge" enables both hashing and sampling (squeezing)
@@ -99,6 +95,7 @@ pub trait Sponge: Hasher + Sampler + Sized {
     /// note that sub-protocols do not need absorable statements.
     ///
     /// This method cannot be overwritten since Arthur has no public constructor.
+    #[must_use]
     fn verify<P: Proof>(
         &mut self,
         st: &P::Statement,
@@ -194,6 +191,8 @@ pub trait Proof: Tx {
     type Result;
 
     /// Every protocol should have a unique identifier.
+    /// (to seperate the random oracles)
+    /// 
     /// It can be chosen arbitarily.
     const NAME: &'static [u8];
 
@@ -201,11 +200,14 @@ pub trait Proof: Tx {
     /// (because Arthur does not have a public constructor),
     /// instead you must use .verify.
     ///
-    /// However, you CAN invoke this "interact" method from other "interact" methods.
-    /// This enables safely composing sub-protocols without comitting to the intermediate statements
-    /// and domain seperators.
+    /// However, you CAN invoke "interact" method from other 
+    /// "interact" methods (since you have an Arthur instance).
+    /// This enables safely composing sub-protocols without comitting 
+    /// to the intermediate statements and domain seperators.
     ///
-    /// Note that the statement is a reference.
+    /// Note that the statement is a reference, 
+    /// this ensures that the entire statement must be absorbed up-front:
+    /// it cannot contain Msg's (they could not be received as they are behind a borrow).
     fn interact<S: Sponge>(
         self,
         st: &Self::Statement,
