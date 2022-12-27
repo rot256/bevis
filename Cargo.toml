@@ -7,6 +7,7 @@ authors = ["Mathias Hall-Andersen"]
 [dependencies]
 bevis_derive = { path = "bevis_derive" }
 serde = {version = "1", optional = true}
+error = "*"
 
 [features]
 default = ["serde", "alloc"]

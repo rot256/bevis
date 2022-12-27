@@ -1,4 +1,4 @@
-#![no_std]
+// #![no_std]
 
 // used to impl. Absorb for Vec<_>
 #[cfg(feature = "alloc")]
@@ -8,7 +8,6 @@ extern crate bevis_derive;
 
 pub use bevis_derive::*;
 
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 mod challenge;
@@ -39,7 +38,6 @@ pub trait Challenge {
 pub struct Msg<T: Absorb>(T);
 
 // Messages serialize without overhead
-#[cfg(feature = "serde")]
 impl<T: Serialize + Absorb> Serialize for Msg<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -50,7 +48,6 @@ impl<T: Serialize + Absorb> Serialize for Msg<T> {
 }
 
 // Messages deserialize without overhead
-#[cfg(feature = "serde")]
 impl<'de, T: Deserialize<'de> + Absorb> Deserialize<'de> for Msg<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
