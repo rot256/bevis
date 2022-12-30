@@ -76,7 +76,7 @@ pub fn impl_challenge(input: proc_macro::TokenStream) -> proc_macro::TokenStream
     let name = input.ident;
     let expanded = quote! {
         impl #impl_generics bevis::Challenge for #name #ty_generics #where_clause {
-            fn sample<S: bevis::RngCore>(s: &mut S) -> Self {
+            fn sample<S: bevis::RngCore + bevis::CryptoRng>(s: &mut S) -> Self {
                 #sampler
             }
         }

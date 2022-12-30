@@ -26,7 +26,7 @@ struct CCC {
 #[derive(Challenge)]
 struct CCCC;
 
-#[derive(Tx)]
+#[derive(Tx, Serialize, Deserialize)]
 struct Round1 {
     v: Msg<u32>,
     r: Msg<FieldElem>,
@@ -56,24 +56,6 @@ enum V {
     A,
     B,
     C,
-}
-
-impl Proof for Pf {
-    type Statement = ();
-    type Error = ();
-    type Result = ();
-
-    const NAME: &'static [u8] = b"Test Proof";
-
-    fn interact<S: Sponge>(self, _st: &Self::Statement, ts: &mut Arthur<S>) -> Result<(), ()> {
-        let v = ts.recv(self.v);
-        if v != 0 {
-            let _f = ts.recv(self.f);
-            println!("read some fields conditionally, still sound...");
-        }
-
-        Ok(())
-    }
 }
 
 #[test]
