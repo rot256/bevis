@@ -1,13 +1,15 @@
-use crate::{Challenge, Sampler};
+use crate::Challenge;
+
+use rand_core::{CryptoRng, RngCore};
 
 #[macro_export]
 macro_rules! challenge_int_impl {
     ( $t:tt, $n:expr ) => {
         impl Challenge for $t {
             #[inline(always)]
-            fn sample<S: Sampler>(ts: &mut S) -> Self {
+            fn sample<S: CryptoRng + RngCore>(ts: &mut S) -> Self {
                 let mut buf = [0u8; $n];
-                ts.read(&mut buf);
+                ts.fill_bytes(&mut buf);
                 Self::from_le_bytes(buf)
             }
         }
@@ -15,14 +17,14 @@ macro_rules! challenge_int_impl {
 }
 
 impl Challenge for bool {
-    fn sample<S: Sampler>(ts: &mut S) -> Self {
+    fn sample<S: CryptoRng + RngCore>(ts: &mut S) -> Self {
         let v: u8 = u8::sample(ts);
         (v & 1) == 1
     }
 }
 
 impl<const N: usize, T: Challenge + Default + Copy> Challenge for [T; N] {
-    fn sample<S: Sampler>(ts: &mut S) -> Self {
+    fn sample<S: CryptoRng + RngCore>(ts: &mut S) -> Self {
         let mut res: [T; N] = [T::default(); N];
         for e in res.iter_mut() {
             *e = T::sample(ts);
