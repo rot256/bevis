@@ -6,11 +6,11 @@ use core::fmt;
 
 use serde::ser;
 
-pub(super) struct AbsorbSerializer<'a, H: Hasher> {
+pub(super) struct AbsorbSerializer<'a, H: Hasher<u8>> {
     pub h: &'a mut H,
 }
 
-pub(super) struct AbsorbCompound<'a, 'b, H: Hasher> {
+pub(super) struct AbsorbCompound<'a, 'b, H: Hasher<u8>> {
     ser: &'b mut AbsorbSerializer<'a, H>,
 }
 
@@ -31,7 +31,7 @@ impl ser::Error for AbsorbError {
     }
 }
 
-impl<'a, H: Hasher> AbsorbSerializer<'a, H> {
+impl<'a, H: Hasher<u8>> AbsorbSerializer<'a, H> {
     fn serialize_byte(&mut self, v: u8) {
         self.h.write(&[v]);
     }
@@ -47,7 +47,7 @@ macro_rules! absorb_int_impl {
     };
 }
 
-impl<'a, 'b, H: Hasher> serde::Serializer for &'b mut AbsorbSerializer<'a, H> {
+impl<'a, 'b, H: Hasher<u8>> serde::Serializer for &'b mut AbsorbSerializer<'a, H> {
     type Ok = ();
     type Error = AbsorbError;
 
@@ -222,7 +222,7 @@ impl<'a, 'b, H: Hasher> serde::Serializer for &'b mut AbsorbSerializer<'a, H> {
     }
 }
 
-impl<'a, 'b, H: Hasher> ser::SerializeSeq for AbsorbCompound<'a, 'b, H> {
+impl<'a, 'b, H: Hasher<u8>> ser::SerializeSeq for AbsorbCompound<'a, 'b, H> {
     type Ok = ();
     type Error = AbsorbError;
 
@@ -238,7 +238,7 @@ impl<'a, 'b, H: Hasher> ser::SerializeSeq for AbsorbCompound<'a, 'b, H> {
     }
 }
 
-impl<'a, 'b, H: Hasher> ser::SerializeTuple for AbsorbCompound<'a, 'b, H> {
+impl<'a, 'b, H: Hasher<u8>> ser::SerializeTuple for AbsorbCompound<'a, 'b, H> {
     type Ok = ();
     type Error = AbsorbError;
 
@@ -254,7 +254,7 @@ impl<'a, 'b, H: Hasher> ser::SerializeTuple for AbsorbCompound<'a, 'b, H> {
     }
 }
 
-impl<'a, 'b, H: Hasher> ser::SerializeTupleStruct for AbsorbCompound<'a, 'b, H> {
+impl<'a, 'b, H: Hasher<u8>> ser::SerializeTupleStruct for AbsorbCompound<'a, 'b, H> {
     type Ok = ();
     type Error = AbsorbError;
 
@@ -270,7 +270,7 @@ impl<'a, 'b, H: Hasher> ser::SerializeTupleStruct for AbsorbCompound<'a, 'b, H> 
     }
 }
 
-impl<'a, 'b, H: Hasher> ser::SerializeTupleVariant for AbsorbCompound<'a, 'b, H> {
+impl<'a, 'b, H: Hasher<u8>> ser::SerializeTupleVariant for AbsorbCompound<'a, 'b, H> {
     type Ok = ();
     type Error = AbsorbError;
 
@@ -286,7 +286,7 @@ impl<'a, 'b, H: Hasher> ser::SerializeTupleVariant for AbsorbCompound<'a, 'b, H>
     }
 }
 
-impl<'a, 'b, H: Hasher> ser::SerializeMap for AbsorbCompound<'a, 'b, H> {
+impl<'a, 'b, H: Hasher<u8>> ser::SerializeMap for AbsorbCompound<'a, 'b, H> {
     type Ok = ();
     type Error = AbsorbError;
 
@@ -309,7 +309,7 @@ impl<'a, 'b, H: Hasher> ser::SerializeMap for AbsorbCompound<'a, 'b, H> {
     }
 }
 
-impl<'a, 'b, H: Hasher> ser::SerializeStruct for AbsorbCompound<'a, 'b, H> {
+impl<'a, 'b, H: Hasher<u8>> ser::SerializeStruct for AbsorbCompound<'a, 'b, H> {
     type Ok = ();
     type Error = AbsorbError;
 
@@ -325,7 +325,7 @@ impl<'a, 'b, H: Hasher> ser::SerializeStruct for AbsorbCompound<'a, 'b, H> {
     }
 }
 
-impl<'a, 'b, H: Hasher> ser::SerializeStructVariant for AbsorbCompound<'a, 'b, H> {
+impl<'a, 'b, H: Hasher<u8>> ser::SerializeStructVariant for AbsorbCompound<'a, 'b, H> {
     type Ok = ();
     type Error = AbsorbError;
 
@@ -340,80 +340,3 @@ impl<'a, 'b, H: Hasher> ser::SerializeStructVariant for AbsorbCompound<'a, 'b, H
         Ok(())
     }
 }
-
-/*
-impl<T: Tx> Absorb for T {
-    fn absorb<H: Hasher>(&self, h: &mut H) {
-        self.read(h)
-    }
-}
-
-impl Absorb for () {
-    fn absorb<H: Hasher>(&self, _h: &mut H) {}
-}
-
-impl Absorb for bool {
-    #[inline(always)]
-    fn absorb<H: Hasher>(&self, h: &mut H) {
-        let bit: u8 = if *self { 1 } else { 0 };
-        h.write(&[bit]);
-    }
-}
-
-impl<T: Absorb> Absorb for Vec<T> {
-    #[inline(always)]
-    fn absorb<H: Hasher>(&self, h: &mut H) {
-        let s: &[T] = &self[..];
-        s.absorb(h)
-    }
-}
-
-impl<T: Absorb> Absorb for [T] {
-    fn absorb<H: Hasher>(&self, h: &mut H) {
-        // read the length
-        // TOOD: wait for https://github.com/rust-lang/rust/issues/96762
-        let n = (self.len() as u64).to_le_bytes();
-        n.absorb(h);
-
-        // read every element
-        for elem in self.iter() {
-            elem.absorb(h)
-        }
-    }
-}
-
-impl<T: Absorb> Absorb for Option<T> {
-    fn absorb<H: Hasher>(&self, h: &mut H) {
-        // read if Some/None
-        self.is_some().absorb(h);
-
-        // read inner value (if present)
-        if let Some(v) = self {
-            v.absorb(h)
-        }
-    }
-}
-
-impl<A: Absorb, B: Absorb> Absorb for Result<A, B> {
-    fn absorb<H: Hasher>(&self, h: &mut H) {
-        // read if Ok/Err
-        self.is_ok().absorb(h);
-
-        // read inner value (if present)
-        match self {
-            Ok(v) => v.absorb(h),
-            Err(e) => e.absorb(h),
-        }
-    }
-}
-
-impl<const N: usize, T: Absorb> Absorb for [T; N] {
-    fn absorb<H: Hasher>(&self, h: &mut H) {
-        // read every element
-        // (the length is fixed so no need to include it)
-        for elem in self.iter() {
-            elem.absorb(h)
-        }
-    }
-}
-*/

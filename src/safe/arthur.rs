@@ -1,68 +1,51 @@
-use crate::{Absorb, Transcript, Challenge, Msg};
+use crate::{Absorb, Transcript, Challenge, challenge::Sampler};
+use crate::safe::Sealed;
 
-use rand_core::{CryptoRng, RngCore};
+use core::{marker::PhantomData, ops::{Deref, DerefMut}};
 
-// prevents impl. of Arthur outside crate
-pub trait Sealed {}
+#[repr(transparent)]
+pub struct Arthur<'a, W, T: Transcript<W>> {
+    _ph: PhantomData<W>,
+    tx: &'a mut T,
+}
 
-pub trait Arthur: Transcript + Sealed {
-    fn receive<T: Absorb>(&mut self, elem: Msg<T>) -> T {
-        self.append(&elem.0);
-        elem.0
-    }
-
-    fn send<T: Absorb>(&mut self, elem: T) -> Msg<T> {
-        self.append(&elem);
-        elem.into()
+impl <'a, W, T: Transcript<W>> Arthur<'a, W, T> {
+    #[allow(dead_code)]
+    pub(crate) fn new(tx: &'a mut T) -> Self {
+        Arthur { _ph: PhantomData, tx }
     }
 }
 
-pub(crate) struct ArthurImpl<'a, T: Transcript> {
-    pub(crate) tx: &'a mut T,
+impl <'a, W, T: Transcript<W>> Sealed for Arthur<'a, W, T> {}
+
+impl <'a, W, T: Transcript<W>> Deref for Arthur<'a, W, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.tx
+    }
 }
 
-impl <'a, T: Transcript> Transcript for ArthurImpl<'a, T> {
+impl <'a, W, T: Transcript<W>> DerefMut for Arthur<'a, W, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.tx
+    }
+}
+
+impl <'a, W, T: Transcript<W>> Sampler<W> for Arthur<'a, W, T> {
+    fn fill(&mut self, dst: &mut [W]) {
+        self.tx.fill(dst)
+    }
+}
+
+impl <'a, W, T: Transcript<W>> Transcript<W> for Arthur<'a, W, T> {
     #[inline(always)]
-    fn append<A: Absorb>(&mut self, elem: &A) {
+    fn append<A: Absorb<W>>(&mut self, elem: &A) {
         self.tx.append(elem)
     }
 
     #[inline(always)]
-    fn challenge<C: Challenge>(&mut self) -> C {
+    fn challenge<C: Challenge<W>>(&mut self) -> C {
         self.tx.challenge()
-    }
-}
-
-// prevents impl outside crate
-impl<'a, T: Transcript> Sealed for ArthurImpl<'a, T> {}
-
-impl<'a, T: Transcript> CryptoRng for ArthurImpl<'a, T> {}
-
-impl<'a, T: Transcript> RngCore for ArthurImpl<'a, T> {
-    #[inline(always)]
-    fn next_u32(&mut self) -> u32 {
-        self.tx.next_u32()
-    }
-
-    #[inline(always)]
-    fn next_u64(&mut self) -> u64 {
-        self.tx.next_u64()
-    }
-
-    #[inline(always)]
-    fn fill_bytes(&mut self, dest: &mut [u8]) {
-        self.tx.fill_bytes(dest)
-    }
-
-    #[inline(always)]
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
-        self.tx.try_fill_bytes(dest)
-    }
-}
-
-impl<'a, T: Transcript> Arthur for ArthurImpl<'a, T> {
-    fn receive<A: Absorb>(&mut self, elem: Msg<A>) -> A {
-        self.append(&elem.0);
-        elem.0
     }
 }

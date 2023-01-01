@@ -1,30 +1,37 @@
-use crate::Challenge;
-
 use rand_core::{CryptoRng, RngCore};
+
+/// A type which can be sampled uniformly. Provided for convience.
+/// Challenges can also be sampled directly using the sponge impl of RngCore.
+pub trait Challenge<W> {
+    fn sample<S: Sampler<W>>(ts: &mut S) -> Self;
+}
+
+pub trait Sampler<W> {
+    fn fill(&mut self, dst: &mut [W]);
+}
+
+impl <T: CryptoRng + RngCore> Sampler<u8> for T {
+    fn fill(&mut self, dst: &mut [u8]) {
+        self.fill_bytes(dst)
+    }
+}
 
 #[macro_export]
 macro_rules! challenge_int_impl {
     ( $t:tt, $n:expr ) => {
-        impl Challenge for $t {
+        impl Challenge<u8> for $t {
             #[inline(always)]
-            fn sample<S: CryptoRng + RngCore>(ts: &mut S) -> Self {
+            fn sample<S: Sampler<u8>>(ts: &mut S) -> Self {
                 let mut buf = [0u8; $n];
-                ts.fill_bytes(&mut buf);
+                ts.fill(&mut buf);
                 Self::from_le_bytes(buf)
             }
         }
     };
 }
 
-impl Challenge for bool {
-    fn sample<S: CryptoRng + RngCore>(ts: &mut S) -> Self {
-        let v: u8 = u8::sample(ts);
-        (v & 1) == 1
-    }
-}
-
-impl<const N: usize, T: Challenge + Default + Copy> Challenge for [T; N] {
-    fn sample<S: CryptoRng + RngCore>(ts: &mut S) -> Self {
+impl<const N: usize, W, T: Challenge<W> + Default + Copy> Challenge<W> for [T; N] {
+    fn sample<S: Sampler<W>>(ts: &mut S) -> Self {
         let mut res: [T; N] = [T::default(); N];
         for e in res.iter_mut() {
             *e = T::sample(ts);
