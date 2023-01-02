@@ -1,7 +1,8 @@
-use crate::safe::Sealed;
-use crate::{challenge::Sampler, Absorb, Challenge, Transcript};
+use crate::{challenge::Sampler, Absorb, Challenge, Transcript, Safe};
 
 use rand_core::{RngCore, CryptoRng};
+
+pub trait Sealed {}
 
 #[repr(transparent)]
 pub struct Arthur<'a, T: Transcript>(&'a mut T);
@@ -40,6 +41,8 @@ impl<'a, T: Transcript> RngCore for Arthur<'a, T> {
 impl<'a, T: Transcript> Sampler for Arthur<'a, T> {}
 
 impl<'a, T: Transcript> Sealed for Arthur<'a, T> {}
+
+impl<'a, T: Transcript> Safe for Arthur<'a, T> {}
 
 impl<'a, T: Transcript> Transcript for Arthur<'a, T> {
     #[inline(always)]

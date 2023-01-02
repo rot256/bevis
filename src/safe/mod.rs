@@ -1,11 +1,16 @@
 mod arthur;
 mod proof;
 
+pub use arthur::Arthur;
+pub use proof::{Proof, Bevis, SafeProof};
+
 use core::fmt::Debug;
 
 use crate::Msg;
 
-pub trait Sealed {}
+/// Guarantees that the transcript occurs only in a 
+/// context in which it is bound to the statement.
+pub trait Safe: arthur::Sealed {}
 
 /// Marker trait.
 ///
@@ -24,6 +29,3 @@ impl<T: Debug> Tx for Msg<T> {
     #[inline(always)]
     fn read(&self) {}
 }
-
-pub use arthur::Arthur;
-pub use proof::{Proof, SafeProof};

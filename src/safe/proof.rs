@@ -1,10 +1,11 @@
-use crate::safe::Sealed;
-use crate::{Absorb, Arthur, CryptoRng, RngCore, Transcript, Tx};
+
+use crate::{Absorb, Arthur, CryptoRng, RngCore, Transcript, Tx, Safe};
 
 /// A safe proof is a proof where Fiat-Shamir is
 /// guaranteed to be implemented correctly:
 /// every element in the proof consists of Msg or structs containing Msg.
 pub trait SafeProof: Proof + Tx {}
+
 
 pub trait Proof: Sized {
     type CRS;
@@ -34,7 +35,7 @@ pub trait Proof: Sized {
     /// If you find yourself with the need to "add another argument" to this trait
     /// the argument is probably part of the statement and you should make sure to
     /// include it as to ensure it is committed to.
-    fn consume<T: Transcript + Sealed>(
+    fn consume<T: Transcript + Safe>(
         self,
         crs: &Self::CRS,      // this MUST be a fixed value.
         st: &Self::Statement, // statement
@@ -61,8 +62,6 @@ pub trait Proof: Sized {
 }
 
 pub trait Bevis: Transcript {
-    /// An implementation overwriting this
-    ///
     /// In-order to verify a statement it must be absorbable,
     /// note that sub-protocols do not need absorable statements.
     ///

@@ -12,8 +12,13 @@ mod challenge;
 mod msg;
 mod transcript;
 
+// debugging trace transcript
 #[cfg(feature = "trace")]
 mod trace;
+
+// debugging trace transcript
+#[cfg(feature = "trace")]
+pub use trace::{TraceTranscript};
 
 // safe-proof interface
 #[cfg(feature = "safe")]
@@ -21,16 +26,13 @@ mod safe;
 
 // safe-proof interface
 #[cfg(feature = "safe")]
-pub use safe::{Arthur, Proof, Tx};
+pub use safe::{Arthur, Bevis, Proof, SafeProof, Safe, Tx};
 
 pub use bevis_derive::*;
 
 pub use absorb::{Absorb, Hasher};
 
 pub use transcript::{SpongeTranscript, Transcript};
-
-#[cfg(feature = "trace")]
-pub use trace::{TraceTranscript};
 
 pub use challenge::{Challenge, Sampler};
 

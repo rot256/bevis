@@ -83,8 +83,8 @@ enum V {
 
 #[test]
 fn test() {
-    let ts = strobe::Transcript::new("test");
-    let mut ts = bevis::TraceTranscript::new(ts);
+    let  mut ts = strobe::Transcript::new("test");
+    // let mut ts = bevis::TraceTranscript::new(ts);
 
 
     ts.append(&12u32);
@@ -96,7 +96,6 @@ fn test() {
 
 
 
-    println!("{}", ts);
-
-    println!("{}", ts.transcript());
+    // println!("{}", ts);
+    // println!("{}", ts.transcript());
 }
