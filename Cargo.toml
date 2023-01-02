@@ -15,4 +15,3 @@ trace = [] # tracing transcript for debugging/testing
 
 [dev-dependencies]
 compiletest_rs = "0.9"
-bevis-strobe = { path = "../bevis-strobe" }
