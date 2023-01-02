@@ -2,22 +2,21 @@
 
 extern crate bevis_derive;
 
-use challenge::Sampler;
 pub use rand_core::{CryptoRng, RngCore};
 
-mod rng;
-mod msg;
 mod absorb;
 mod challenge;
+mod msg;
+mod rng;
 mod transcript;
 
-// safe interface
-// #[cfg(feature = "safe")]
+// safe-proof interface
+#[cfg(feature = "safe")]
 mod safe;
 
-// safe interface
+// safe-proof interface
 #[cfg(feature = "safe")]
-pub use safe::{Tx, Arthur, Proof};
+pub use safe::{Arthur, Proof, Tx};
 
 pub use rng::AsRng;
 
@@ -25,9 +24,9 @@ pub use bevis_derive::*;
 
 pub use absorb::{Absorb, Hasher};
 
-pub use transcript::{Transcript, SpongeTranscript};
+pub use transcript::{SpongeTranscript, Transcript};
 
-pub use challenge::Challenge;
+pub use challenge::{Challenge, Sampler};
 
 pub use msg::Msg;
 

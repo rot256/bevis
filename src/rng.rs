@@ -1,7 +1,8 @@
 use crate::Sampler;
 
-use rand_core::{CryptoRng, RngCore, impls};
+use rand_core::{impls, CryptoRng, RngCore};
 
+#[repr(transparent)]
 pub struct RngImpl<'a, S: Sampler<u8>>(&'a mut S);
 
 /// Enables the use of Samplers over bytes as regular Rngs
@@ -9,15 +10,16 @@ pub trait AsRng<'a, S: Sampler<u8>> {
     fn rng(&'a mut self) -> RngImpl<'a, S>;
 }
 
-impl <'a, S: Sampler<u8>> AsRng<'a, S> for S {
+impl<'a, S: Sampler<u8>> AsRng<'a, S> for S {
+    #[inline(always)]
     fn rng(&'a mut self) -> RngImpl<'a, S> {
         RngImpl(self)
     }
 }
 
-impl <'a, S: Sampler<u8>> CryptoRng for RngImpl<'a, S>  {}
+impl<'a, S: Sampler<u8>> CryptoRng for RngImpl<'a, S> {}
 
-impl <'a, S: Sampler<u8>> RngCore for RngImpl<'a, S> {
+impl<'a, S: Sampler<u8>> RngCore for RngImpl<'a, S> {
     #[inline(always)]
     fn next_u32(&mut self) -> u32 {
         impls::next_u32_via_fill(self)

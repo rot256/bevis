@@ -1,14 +1,14 @@
-use crate::{Transcript, Tx, Absorb, RngCore, CryptoRng, Arthur};
 use crate::safe::Sealed;
+use crate::{Absorb, Arthur, CryptoRng, RngCore, Transcript, Tx};
 
 /// A safe proof is a proof where Fiat-Shamir is
-/// guaranteed to be implemented correctly: 
+/// guaranteed to be implemented correctly:
 /// every element in the proof consists of Msg or structs containing Msg.
 pub trait SafeProof<W>: Proof<W> + Tx {}
 
 /// Label used for domain seperation.
-/// This trait is introduced for SNARK friendly hash functions 
-/// where the label may be compressed to one/more field elements 
+/// This trait is introduced for SNARK friendly hash functions
+/// where the label may be compressed to one/more field elements
 /// using a traditional hash function rather than absorbing the string directly.
 pub trait Label<W>: From<&'static str> + Absorb<W> {}
 
@@ -93,12 +93,13 @@ pub trait Bevis<W>: Transcript<W> {
         // append the statement
         self.append(st);
 
-        // run the interaction
-        // (which may run sub-protocols / sub-interactions)
+        // run the interaction.
+        // which may run sub-protocols / sub-interactions
+        // -- without absorbing all the statements of the sub-protocols
         pf.verify(crs, st, &mut Arthur::new(self))
     }
 
-    /// Provide for convience: 
+    /// Provide for convience:
     /// makes it easier to compose the prover for different sub-protocols
     fn prove<R: RngCore + CryptoRng, P: Proof<W>>(
         &mut self,
@@ -117,8 +118,8 @@ pub trait Bevis<W>: Transcript<W> {
         self.append(st);
 
         // run the prover to obtain the proof
-        P::prove(crs, st, wit, rng, &mut Arthur::new(self))
+        P::prove(crs, st, wit, rng, self)
     }
 }
 
-impl <W, T: Transcript<W>> Bevis<W> for T {}
+impl<W, T: Transcript<W>> Bevis<W> for T {}

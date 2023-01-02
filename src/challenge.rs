@@ -7,12 +7,30 @@ pub trait Challenge<W> {
 }
 
 pub trait Sampler<W> {
-    fn fill(&mut self, dst: &mut [W]);
+    fn read(&mut self) -> W;
+
+    fn fill(&mut self, dst: &mut [W]) {
+        for i in 0..dst.len() {
+            dst[i] = self.read()
+        }
+    }
 }
 
-impl <T: CryptoRng + RngCore> Sampler<u8> for T {
+impl<T: CryptoRng + RngCore> Sampler<u8> for T {
+    fn read(&mut self) -> u8 {
+        let mut dst: [u8; 1] = [0u8; 1];
+        self.fill_bytes(&mut dst);
+        dst[0]
+    }
+
     fn fill(&mut self, dst: &mut [u8]) {
-        self.fill_bytes(dst)
+        self.fill_bytes(dst);
+    }
+}
+
+impl Challenge<u8> for u8 {
+    fn sample<S: Sampler<u8>>(ts: &mut S) -> Self {
+        ts.read()
     }
 }
 
@@ -30,17 +48,13 @@ macro_rules! challenge_int_impl {
     };
 }
 
-impl<const N: usize, W, T: Challenge<W> + Default + Copy> Challenge<W> for [T; N] {
+impl<const N: usize, W, T: Challenge<W>> Challenge<W> for [T; N] {
     fn sample<S: Sampler<W>>(ts: &mut S) -> Self {
-        let mut res: [T; N] = [T::default(); N];
-        for e in res.iter_mut() {
-            *e = T::sample(ts);
-        }
-        res
+        [(); N].map(|_| T::sample(ts))
     }
 }
 
-challenge_int_impl!(u8, 1);
+// challenge_int_impl!(u8, 1);
 challenge_int_impl!(u16, 2);
 challenge_int_impl!(u32, 4);
 challenge_int_impl!(u64, 8);

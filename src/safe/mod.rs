@@ -1,5 +1,5 @@
-mod proof;
 mod arthur;
+mod proof;
 
 use crate::Msg;
 
@@ -23,5 +23,5 @@ impl<T> Tx for Msg<T> {
     fn read(&self) {}
 }
 
-pub use arthur::{Arthur};
+pub use arthur::Arthur;
 pub use proof::{Proof, SafeProof};
