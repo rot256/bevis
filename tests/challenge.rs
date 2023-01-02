@@ -1,41 +1,26 @@
 #![allow(clippy::all)]
 #![allow(dead_code)]
 
-use bevis::{Absorb, Arthur, Challenge, Msg, Proof, Sponge, Tx};
+use bevis::{Absorb, Arthur, Challenge, Msg, Proof, Sponge, Tx, Transcript};
 
 use serde::{Deserialize, Serialize};
+
+use bevis_strobe as strobe;
 
 #[derive(Deserialize, Serialize)]
 struct U32(u32);
 
-impl Absorb<u32> for U32 {
-    fn absorb<H: bevis::Hasher<u32>>(&self, h: &mut H) {
-        h.write(&[self.0])
-    }
-}
 
-impl Challenge<u32> for U32 {
-    fn sample<S: bevis::Sampler<u32>>(ts: &mut S) -> Self {
-        U32(ts.read())
-    }
-}
-
-impl Challenge<u8> for U32 {
-    fn sample<S: bevis::Sampler<u8>>(ts: &mut S) -> Self {
-        let v: [u8; 4] = bevis::Challenge::sample(ts);
-        Self(u32::from_le_bytes(v))
-    }
-}
-
-#[derive(Challenge, Serialize, Absorb)]
-#[challenge(u32, u8)]
-#[absorb(u32)]
+#[derive(Serialize, Deserialize, Challenge)]
 struct FieldElem {
-    k: [U32; 4],
-    v: U32
+    k: [u32; 4],
 }
 
-
+#[derive(Serialize, Deserialize)]
+struct Round1 {
+    a: FieldElem,
+    b: FieldElem
+}
 
 /*
 #[derive(Tx, Serialize, Deserialize)]
@@ -97,4 +82,21 @@ enum V {
 */
 
 #[test]
-fn test() {}
+fn test() {
+    let ts = strobe::Transcript::new("test");
+    let mut ts = bevis::TraceTranscript::new(ts);
+
+
+    ts.append(&12u32);
+
+    let _v: FieldElem = ts.challenge();
+
+  
+    ts.append(&_v);
+
+
+
+    println!("{}", ts);
+
+    println!("{}", ts.transcript());
+}

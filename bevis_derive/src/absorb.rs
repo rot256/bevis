@@ -26,18 +26,18 @@ fn absorb_fields(fn_name: TokenStream, fields: &Fields) -> TokenStream {
     }
 }
 
-pub fn impl_absorb(tt: &Ident, input: &syn::DeriveInput) -> proc_macro::TokenStream {
-    fn add_trait_bounds(tt: &Ident, mut generics: Generics) -> Generics {
+pub fn impl_absorb(input: &syn::DeriveInput) -> proc_macro::TokenStream {
+    fn add_trait_bounds(mut generics: Generics) -> Generics {
         for param in &mut generics.params {
             if let GenericParam::Type(ref mut type_param) = *param {
-                type_param.bounds.push(parse_quote!(::bevis::Absorb<#tt>));
+                type_param.bounds.push(parse_quote!(::bevis::Absorb));
             }
         }
         generics
     }
 
-    fn body(tt: &Ident, data: &Data) -> TokenStream {
-        let fn_name = quote! { ::bevis::Absorb::<#tt>::absorb };
+    fn body(data: &Data) -> TokenStream {
+        let fn_name = quote! { ::bevis::Absorb::absorb };
         match data {
             Data::Union(_) => syn::Error::new(
                 fn_name.span(),
@@ -154,17 +154,17 @@ pub fn impl_absorb(tt: &Ident, input: &syn::DeriveInput) -> proc_macro::TokenStr
     }
 
     //
-    let generics = add_trait_bounds(tt, input.generics.clone());
+    let generics = add_trait_bounds(input.generics.clone());
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     // compute body of impl function
-    let checks = body(tt, &input.data);
+    let checks = body(&input.data);
 
     // implement Msg for the parent
     let name = input.ident.clone();
     let expanded = quote! {
-        impl #impl_generics ::bevis::Absorb<#tt> for #name #ty_generics #where_clause {
-            fn absorb<H: ::bevis::Hasher<#tt>>(&self, h: &mut H) {
+        impl #impl_generics ::bevis::Absorb for #name #ty_generics #where_clause {
+            fn absorb<H: ::bevis::Hasher>(&self, h: &mut H) {
                 #checks
             }
         }

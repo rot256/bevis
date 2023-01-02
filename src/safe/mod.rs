@@ -1,6 +1,8 @@
 mod arthur;
 mod proof;
 
+use core::fmt::Debug;
+
 use crate::Msg;
 
 pub trait Sealed {}
@@ -18,7 +20,7 @@ pub trait Tx {
 ///
 /// When https://github.com/rust-lang/rust/issues/68318
 /// lands we can improve this.
-impl<T> Tx for Msg<T> {
+impl<T: Debug> Tx for Msg<T> {
     #[inline(always)]
     fn read(&self) {}
 }

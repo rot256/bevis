@@ -1,8 +1,11 @@
+use core::fmt::Debug;
+
 use serde::{Deserialize, Serialize};
 
-/// Just like hotel california:
-/// you can check in, but you can never leave...
+#[repr(transparent)]
+#[derive(Debug)]
 pub struct Msg<T>(pub(crate) T);
+
 
 /// Messages serialize without overhead
 impl<T: Serialize> Serialize for Msg<T> {

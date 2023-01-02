@@ -1,54 +1,64 @@
-use core::marker::PhantomData;
+use crate::{Sampler, Msg, Absorb, Challenge, Sponge};
 
-use crate::{challenge::Sampler, Absorb, Challenge, Sponge};
+use rand_core::{RngCore, CryptoRng};
 
-///
-/// Serves to prevent the user from using the underlaying sponge methods.
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct SpongeTranscript<W, S: Sponge<W>> {
-    _ph: PhantomData<W>,
-    sponge: S,
-}
+pub struct SpongeTranscript<S: Sponge>(S);
 
-///
-///
-/// Transcripts over u8 can additionally be used as RngCore
-/// enabling easy sampling of a variety of types in the Rust ecosystem.
-pub trait Transcript<W>: Sampler<W> + Sized {
+pub trait Transcript: Sampler + Sized {
     /// Append message to the trancript
-    fn append<A: Absorb<W>>(&mut self, elem: &A);
+    fn append<A: Absorb>(&mut self, elem: &A);
 
     /// Generate a challenge
-    fn challenge<C: Challenge<W>>(&mut self) -> C;
-}
+    fn challenge<C: Challenge>(&mut self) -> C;
 
-impl<W, S: Sponge<W>> SpongeTranscript<W, S> {
-    pub fn new(sponge: S) -> Self {
-        Self {
-            _ph: PhantomData,
-            sponge,
-        }
+    fn recv<A: Absorb>(&mut self, msg: Msg<A>) -> A {
+        self.append(&msg.0);
+        msg.0
+    }
+
+    fn send<A: Absorb>(&mut self, elem: A) -> Msg<A> {
+        self.append(&elem);
+        Msg(elem)
     }
 }
 
-impl<W, S: Sponge<W>> Sampler<W> for SpongeTranscript<W, S> {
-    fn read(&mut self) -> W {
-        self.sponge.read()
-    }
-
-    fn fill(&mut self, dst: &mut [W]) {
-        self.sponge.fill(dst)
+impl<S: Sponge> SpongeTranscript<S> {
+    pub fn new(sep: &str) -> Self {
+        Self(S::new(sep))
     }
 }
 
-impl<W, S: Sponge<W>> Transcript<W> for SpongeTranscript<W, S> {
-    fn append<T: Absorb<W>>(&mut self, elem: &T) {
-        elem.absorb(&mut self.sponge);
+impl<S: Sponge> RngCore for SpongeTranscript<S> {
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        self.0.fill_bytes(dest)
+    }
+
+    fn next_u32(&mut self) -> u32 {
+        self.0.next_u32()
+    }
+    
+    fn next_u64(&mut self) -> u64 {
+        self.0.next_u64()
+    }
+
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
+        self.0.try_fill_bytes(dest)
+    }
+}
+
+impl<S: Sponge> CryptoRng for SpongeTranscript<S> {}
+
+impl<S: Sponge> Sampler for SpongeTranscript<S> {}
+
+impl<S: Sponge> Transcript for SpongeTranscript<S> {
+    fn append<T: Absorb>(&mut self, elem: &T) {
+        elem.absorb(&mut self.0);
     }
 
     /// Sends a challenge to the prover
-    fn challenge<T: Challenge<W>>(&mut self) -> T {
-        T::sample(&mut self.sponge)
+    fn challenge<T: Challenge>(&mut self) -> T {
+        T::sample(&mut self.0)
     }
 }

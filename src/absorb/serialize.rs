@@ -6,11 +6,11 @@ use core::fmt;
 
 use serde::ser;
 
-pub(super) struct AbsorbSerializer<'a, H: Hasher<u8>> {
+pub(super) struct AbsorbSerializer<'a, H: Hasher> {
     pub h: &'a mut H,
 }
 
-pub(super) struct AbsorbCompound<'a, 'b, H: Hasher<u8>> {
+pub(super) struct AbsorbCompound<'a, 'b, H: Hasher> {
     ser: &'b mut AbsorbSerializer<'a, H>,
 }
 
@@ -31,7 +31,7 @@ impl ser::Error for AbsorbError {
     }
 }
 
-impl<'a, H: Hasher<u8>> AbsorbSerializer<'a, H> {
+impl<'a, H: Hasher> AbsorbSerializer<'a, H> {
     fn serialize_byte(&mut self, v: u8) {
         self.h.write(&[v]);
     }
@@ -47,7 +47,7 @@ macro_rules! absorb_int_impl {
     };
 }
 
-impl<'a, 'b, H: Hasher<u8>> serde::Serializer for &'b mut AbsorbSerializer<'a, H> {
+impl<'a, 'b, H: Hasher> serde::Serializer for &'b mut AbsorbSerializer<'a, H> {
     type Ok = ();
     type Error = AbsorbError;
 
@@ -76,11 +76,13 @@ impl<'a, 'b, H: Hasher<u8>> serde::Serializer for &'b mut AbsorbSerializer<'a, H
     absorb_int_impl!(serialize_i16, i16);
     absorb_int_impl!(serialize_i32, i32);
     absorb_int_impl!(serialize_i64, i64);
+    absorb_int_impl!(serialize_i128, i128);
 
     absorb_int_impl!(serialize_u8, u8);
     absorb_int_impl!(serialize_u16, u16);
     absorb_int_impl!(serialize_u32, u32);
     absorb_int_impl!(serialize_u64, u64);
+    absorb_int_impl!(serialize_u128, u128);
 
     fn collect_str<T: ?Sized>(self, _value: &T) -> Result<Self::Ok, Self::Error>
     where
@@ -222,7 +224,7 @@ impl<'a, 'b, H: Hasher<u8>> serde::Serializer for &'b mut AbsorbSerializer<'a, H
     }
 }
 
-impl<'a, 'b, H: Hasher<u8>> ser::SerializeSeq for AbsorbCompound<'a, 'b, H> {
+impl<'a, 'b, H: Hasher> ser::SerializeSeq for AbsorbCompound<'a, 'b, H> {
     type Ok = ();
     type Error = AbsorbError;
 
@@ -238,7 +240,7 @@ impl<'a, 'b, H: Hasher<u8>> ser::SerializeSeq for AbsorbCompound<'a, 'b, H> {
     }
 }
 
-impl<'a, 'b, H: Hasher<u8>> ser::SerializeTuple for AbsorbCompound<'a, 'b, H> {
+impl<'a, 'b, H: Hasher> ser::SerializeTuple for AbsorbCompound<'a, 'b, H> {
     type Ok = ();
     type Error = AbsorbError;
 
@@ -254,7 +256,7 @@ impl<'a, 'b, H: Hasher<u8>> ser::SerializeTuple for AbsorbCompound<'a, 'b, H> {
     }
 }
 
-impl<'a, 'b, H: Hasher<u8>> ser::SerializeTupleStruct for AbsorbCompound<'a, 'b, H> {
+impl<'a, 'b, H: Hasher> ser::SerializeTupleStruct for AbsorbCompound<'a, 'b, H> {
     type Ok = ();
     type Error = AbsorbError;
 
@@ -270,7 +272,7 @@ impl<'a, 'b, H: Hasher<u8>> ser::SerializeTupleStruct for AbsorbCompound<'a, 'b,
     }
 }
 
-impl<'a, 'b, H: Hasher<u8>> ser::SerializeTupleVariant for AbsorbCompound<'a, 'b, H> {
+impl<'a, 'b, H: Hasher> ser::SerializeTupleVariant for AbsorbCompound<'a, 'b, H> {
     type Ok = ();
     type Error = AbsorbError;
 
@@ -286,7 +288,7 @@ impl<'a, 'b, H: Hasher<u8>> ser::SerializeTupleVariant for AbsorbCompound<'a, 'b
     }
 }
 
-impl<'a, 'b, H: Hasher<u8>> ser::SerializeMap for AbsorbCompound<'a, 'b, H> {
+impl<'a, 'b, H: Hasher> ser::SerializeMap for AbsorbCompound<'a, 'b, H> {
     type Ok = ();
     type Error = AbsorbError;
 
@@ -309,7 +311,7 @@ impl<'a, 'b, H: Hasher<u8>> ser::SerializeMap for AbsorbCompound<'a, 'b, H> {
     }
 }
 
-impl<'a, 'b, H: Hasher<u8>> ser::SerializeStruct for AbsorbCompound<'a, 'b, H> {
+impl<'a, 'b, H: Hasher> ser::SerializeStruct for AbsorbCompound<'a, 'b, H> {
     type Ok = ();
     type Error = AbsorbError;
 
@@ -325,7 +327,7 @@ impl<'a, 'b, H: Hasher<u8>> ser::SerializeStruct for AbsorbCompound<'a, 'b, H> {
     }
 }
 
-impl<'a, 'b, H: Hasher<u8>> ser::SerializeStructVariant for AbsorbCompound<'a, 'b, H> {
+impl<'a, 'b, H: Hasher> ser::SerializeStructVariant for AbsorbCompound<'a, 'b, H> {
     type Ok = ();
     type Error = AbsorbError;
 

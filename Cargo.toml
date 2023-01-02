@@ -10,8 +10,10 @@ serde = {version = "1", default-features = false }
 rand_core = "^0.6"
 
 [features]
-safe = []
+safe = []  # safe-proof interface
+trace = [] # tracing transcript for debugging/testing 
 default = ["safe"]
 
 [dev-dependencies]
 compiletest_rs = "0.9"
+bevis-strobe = { path = "../bevis-strobe" }

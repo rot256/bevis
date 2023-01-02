@@ -1,22 +1,22 @@
 use super::*;
 
-pub(crate) fn impl_challenge(tt: &Ident, input: &syn::DeriveInput) -> proc_macro::TokenStream {
-    fn add_trait_bounds(tt: &Ident, mut generics: Generics) -> Generics {
+pub(crate) fn impl_challenge(input: &syn::DeriveInput) -> proc_macro::TokenStream {
+    fn add_trait_bounds(mut generics: Generics) -> Generics {
         for param in &mut generics.params {
             if let GenericParam::Type(ref mut type_param) = *param {
                 type_param
                     .bounds
-                    .push(parse_quote!(::bevis::Challenge<#tt>));
+                    .push(parse_quote!(::bevis::Challenge));
             }
         }
         generics.clone()
     }
 
     //
-    let generics = add_trait_bounds(tt, input.generics.clone());
+    let generics = add_trait_bounds(input.generics.clone());
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-    fn body(tt: &Ident, data: &Data) -> TokenStream {
+    fn body(data: &Data) -> TokenStream {
         let fn_name = quote! { ::bevis::Absorb::absorb };
         match data {
             Data::Union(_) =>
@@ -39,7 +39,7 @@ pub(crate) fn impl_challenge(tt: &Ident, input: &syn::DeriveInput) -> proc_macro
                         let children = fields.named.iter().map(|field| {
                             let name = &field.ident;
                             quote! {
-                                #name: ::bevis::Challenge::<#tt>::sample(s)
+                                #name: ::bevis::Challenge::sample(s)
                             }
                         });
 
@@ -50,7 +50,7 @@ pub(crate) fn impl_challenge(tt: &Ident, input: &syn::DeriveInput) -> proc_macro
                     Fields::Unnamed(ref fields) => {
                         let children = fields.unnamed.iter().map(|_field| {
                             quote! {
-                                ::bevis::Challenge::<#tt>::sample(s)
+                                ::bevis::Challenge::sample(s)
                             }
                         });
 
@@ -71,13 +71,13 @@ pub(crate) fn impl_challenge(tt: &Ident, input: &syn::DeriveInput) -> proc_macro
     }
 
     // compute body of impl function
-    let sampler = body(tt, &input.data);
+    let sampler = body(&input.data);
 
     // implement Msg for the parent
     let name = input.ident.clone();
     let expanded = quote! {
-        impl #impl_generics ::bevis::Challenge<#tt> for #name #ty_generics #where_clause {
-            fn sample<S: ::bevis::Sampler::<#tt>>(s: &mut S) -> Self {
+        impl #impl_generics ::bevis::Challenge for #name #ty_generics #where_clause {
+            fn sample<S: ::bevis::CryptoRng + ::bevis::RngCore>(s: &mut S) -> Self {
                 #sampler
             }
         }

@@ -4,25 +4,14 @@ use crate::{Absorb, Arthur, CryptoRng, RngCore, Transcript, Tx};
 /// A safe proof is a proof where Fiat-Shamir is
 /// guaranteed to be implemented correctly:
 /// every element in the proof consists of Msg or structs containing Msg.
-pub trait SafeProof<W>: Proof<W> + Tx {}
+pub trait SafeProof: Proof + Tx {}
 
-/// Label used for domain seperation.
-/// This trait is introduced for SNARK friendly hash functions
-/// where the label may be compressed to one/more field elements
-/// using a traditional hash function rather than absorbing the string directly.
-pub trait Label<W>: From<&'static str> + Absorb<W> {}
-
-impl Label<u8> for &'static str {}
-
-pub trait Proof<W = u8>: Sized {
+pub trait Proof: Sized {
     type CRS;
     type Error;
     type Result;
     type Witness;
     type Statement;
-
-    /// For u8 (the usual case) this is just &'static str
-    type Label: Label<W>;
 
     /// Every protocol should have a unique identifier.
     /// (to seperate the random oracles)
@@ -45,7 +34,7 @@ pub trait Proof<W = u8>: Sized {
     /// If you find yourself with the need to "add another argument" to this trait
     /// the argument is probably part of the statement and you should make sure to
     /// include it as to ensure it is committed to.
-    fn verify<T: Transcript<W> + Sealed>(
+    fn consume<T: Transcript + Sealed>(
         self,
         crs: &Self::CRS,      // this MUST be a fixed value.
         st: &Self::Statement, // statement
@@ -60,7 +49,7 @@ pub trait Proof<W = u8>: Sized {
     /// A default implementation is provided,
     /// in case the user wants to produce proofs in some other way.
     #[allow(unused_variables)]
-    fn prove<T: Transcript<W>, R: RngCore + CryptoRng>(
+    fn create<T: Transcript, R: RngCore + CryptoRng>(
         crs: &Self::CRS,      // common reference string (constant)
         st: &Self::Statement, // statement
         wit: &Self::Witness,  // witness
@@ -71,24 +60,24 @@ pub trait Proof<W = u8>: Sized {
     }
 }
 
-pub trait Bevis<W>: Transcript<W> {
+pub trait Bevis: Transcript {
     /// An implementation overwriting this
     ///
     /// In-order to verify a statement it must be absorbable,
     /// note that sub-protocols do not need absorable statements.
     ///
     /// This method cannot be overwritten since Arthur has no public constructor.
-    fn verify<P: Proof<W>>(
+    fn verify<P: Proof>(
         &mut self,
         crs: &P::CRS, // this must be a fixed value.
         st: &P::Statement,
         pf: P,
-    ) -> Result<P::Result, <P as Proof<W>>::Error>
+    ) -> Result<P::Result, <P as Proof>::Error>
     where
-        P::Statement: Absorb<W>,
+        P::Statement: Absorb,
     {
         // oracle seperation
-        self.append(&P::Label::from(P::NAME));
+        self.append(&P::NAME);
 
         // append the statement
         self.append(st);
@@ -96,30 +85,30 @@ pub trait Bevis<W>: Transcript<W> {
         // run the interaction.
         // which may run sub-protocols / sub-interactions
         // -- without absorbing all the statements of the sub-protocols
-        pf.verify(crs, st, &mut Arthur::new(self))
+        pf.consume(crs, st, &mut Arthur::new(self))
     }
 
     /// Provide for convience:
     /// makes it easier to compose the prover for different sub-protocols
-    fn prove<R: RngCore + CryptoRng, P: Proof<W>>(
+    fn prove<R: RngCore + CryptoRng, P: Proof>(
         &mut self,
         crs: &P::CRS,      // common reference string (constant)
         st: &P::Statement, // statement
         wit: &P::Witness,  // witness
         rng: &mut R,       // sampling of randomness
-    ) -> Result<P, <P as Proof<W>>::Error>
+    ) -> Result<P, <P as Proof>::Error>
     where
-        P::Statement: Absorb<W>,
+        P::Statement: Absorb,
     {
         // oracle seperation
-        self.append(&P::Label::from(P::NAME));
+        self.append(&P::NAME);
 
         // append the statement
         self.append(st);
 
         // run the prover to obtain the proof
-        P::prove(crs, st, wit, rng, self)
+        P::create(crs, st, wit, rng, self)
     }
 }
 
-impl<W, T: Transcript<W>> Bevis<W> for T {}
+impl<T: Transcript> Bevis for T {}
