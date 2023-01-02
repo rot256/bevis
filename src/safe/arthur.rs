@@ -1,6 +1,6 @@
-use crate::{challenge::Sampler, Absorb, Challenge, Transcript, Safe};
+use crate::{challenge::Sampler, Absorb, Challenge, Safe, Transcript};
 
-use rand_core::{RngCore, CryptoRng};
+use rand_core::{CryptoRng, RngCore};
 
 pub trait Sealed {}
 

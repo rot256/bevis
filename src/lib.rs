@@ -18,7 +18,7 @@ mod trace;
 
 // debugging trace transcript
 #[cfg(feature = "trace")]
-pub use trace::{TraceTranscript};
+pub use trace::TraceTranscript;
 
 // safe-proof interface
 #[cfg(feature = "safe")]
@@ -26,7 +26,7 @@ mod safe;
 
 // safe-proof interface
 #[cfg(feature = "safe")]
-pub use safe::{Arthur, Bevis, Proof, SafeProof, Safe, Tx};
+pub use safe::{Arthur, Bevis, Proof, Safe, SafeProof, Tx};
 
 pub use bevis_derive::*;
 

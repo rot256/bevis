@@ -1,12 +1,12 @@
-use crate::{Absorb, Hasher, Transcript, Challenge, Msg, Sampler};
+use crate::{Absorb, Challenge, Hasher, Msg, Sampler, Transcript};
 
-use alloc::{vec::Vec};
-use alloc::string::{String, ToString};
 use alloc::format;
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
-use core::any::{type_name};
-use core::fmt::Debug;
+use core::any::type_name;
 use core::fmt;
+use core::fmt::Debug;
 
 use rand_core::{CryptoRng, RngCore};
 
@@ -26,19 +26,19 @@ impl Hasher for Vec<u8> {
 }
 
 #[derive(Debug)]
-pub struct TraceTranscript<T: Transcript>{
+pub struct TraceTranscript<T: Transcript> {
     ops: Vec<OpType>,
     ts: T,
 }
 
-impl <T: Transcript> fmt::Display for TraceTranscript<T> {
+impl<T: Transcript> fmt::Display for TraceTranscript<T> {
     // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Transcript(")?;
-        
+
         let mut ops = self.ops.iter().peekable();
 
-        while let Some(op) = ops.next() { 
+        while let Some(op) = ops.next() {
             match op {
                 OpType::Challenge(name) => {
                     write!(f, "Challenge({})", name)?;
@@ -65,9 +65,12 @@ impl <T: Transcript> fmt::Display for TraceTranscript<T> {
     }
 }
 
-impl <T: Transcript> TraceTranscript<T> {
+impl<T: Transcript> TraceTranscript<T> {
     pub fn new(ts: T) -> Self {
-        TraceTranscript { ops: Vec::new(), ts }
+        TraceTranscript {
+            ops: Vec::new(),
+            ts,
+        }
     }
 
     pub fn transcript(&self) -> String {
@@ -76,7 +79,7 @@ impl <T: Transcript> TraceTranscript<T> {
 
         enum Side {
             Verifier,
-            Prover
+            Prover,
         }
 
         fn flush(side: Side, ts: &mut Vec<(Side, String)>, v: &mut Vec<String>) {
@@ -115,7 +118,7 @@ impl <T: Transcript> TraceTranscript<T> {
         }
 
         // final round
-        assert!(verifier.is_empty()|| prover.is_empty());
+        assert!(verifier.is_empty() || prover.is_empty());
         flush(Side::Verifier, &mut rounds, &mut verifier);
         flush(Side::Prover, &mut rounds, &mut prover);
 
@@ -135,7 +138,7 @@ impl <T: Transcript> TraceTranscript<T> {
         let mut lines = Vec::new();
         lines.push(format!("{} {}{}", prover, " ".repeat(arrow), verifier));
         lines.push("-".repeat(arrow + lspace + verifier.len() + 1));
-        
+
         // print rounds
         for r in rounds {
             match r {
@@ -154,63 +157,42 @@ impl <T: Transcript> TraceTranscript<T> {
     }
 }
 
-impl <T: Transcript> RngCore for TraceTranscript<T> {
+impl<T: Transcript> RngCore for TraceTranscript<T> {
     fn fill_bytes(&mut self, dest: &mut [u8]) {
         self.ts.fill_bytes(dest);
-        self.ops.push(
-            OpType::Rng(
-                dest.len()
-            )
-        );
+        self.ops.push(OpType::Rng(dest.len()));
     }
 
     fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
         let res = self.ts.try_fill_bytes(dest);
-        self.ops.push(
-            OpType::Rng(
-                dest.len()
-            )
-        );
+        self.ops.push(OpType::Rng(dest.len()));
         res
     }
 
     fn next_u32(&mut self) -> u32 {
         let val = self.ts.next_u32();
-        self.ops.push(
-            OpType::Challenge(
-                type_name::<u32>()
-            )
-        );
+        self.ops.push(OpType::Challenge(type_name::<u32>()));
         val
     }
 
     fn next_u64(&mut self) -> u64 {
         let val = self.ts.next_u64();
-        self.ops.push(
-            OpType::Challenge(
-                type_name::<u64>()
-            )
-        );
+        self.ops.push(OpType::Challenge(type_name::<u64>()));
         val
     }
 }
 
-impl <T: Transcript> CryptoRng for TraceTranscript<T> {}
+impl<T: Transcript> CryptoRng for TraceTranscript<T> {}
 
-impl <T: Transcript> Sampler for TraceTranscript<T> {}
+impl<T: Transcript> Sampler for TraceTranscript<T> {}
 
-impl <T: Transcript> Transcript for TraceTranscript<T> {
+impl<T: Transcript> Transcript for TraceTranscript<T> {
     fn append<A: Absorb>(&mut self, elem: &A) {
         // add to operations
         {
             let mut hsh = Vec::new();
             elem.absorb(&mut hsh);
-            self.ops.push(
-                OpType::Append(
-                    hsh,
-                    type_name::<A>()
-                )
-            );
+            self.ops.push(OpType::Append(hsh, type_name::<A>()));
         }
 
         // pass on
@@ -219,11 +201,7 @@ impl <T: Transcript> Transcript for TraceTranscript<T> {
 
     fn challenge<C: Challenge>(&mut self) -> C {
         let c = self.ts.challenge();
-        self.ops.push(
-            OpType::Challenge(
-                type_name::<C>()
-            )
-        );
+        self.ops.push(OpType::Challenge(type_name::<C>()));
         c
     }
 
@@ -232,12 +210,7 @@ impl <T: Transcript> Transcript for TraceTranscript<T> {
         {
             let mut hsh = Vec::new();
             msg.0.absorb(&mut hsh);
-            self.ops.push(
-                OpType::Recv(
-                    hsh,
-                    type_name::<A>()
-                )
-            );
+            self.ops.push(OpType::Recv(hsh, type_name::<A>()));
         }
 
         // pass on
@@ -249,16 +222,10 @@ impl <T: Transcript> Transcript for TraceTranscript<T> {
         {
             let mut hsh = Vec::new();
             elem.absorb(&mut hsh);
-            self.ops.push(
-                OpType::Send(
-                    hsh,
-                    type_name::<A>()
-                )
-            );
+            self.ops.push(OpType::Send(hsh, type_name::<A>()));
         }
 
         // pass on
         self.ts.send(elem)
     }
 }
-

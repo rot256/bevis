@@ -1,6 +1,6 @@
-use crate::{Sampler, Msg, Absorb, Challenge, Sponge};
+use crate::{Absorb, Challenge, Msg, Sampler, Sponge};
 
-use rand_core::{RngCore, CryptoRng};
+use rand_core::{CryptoRng, RngCore};
 
 #[derive(Debug)]
 #[repr(transparent)]
@@ -38,7 +38,7 @@ impl<S: Sponge> RngCore for SpongeTranscript<S> {
     fn next_u32(&mut self) -> u32 {
         self.0.next_u32()
     }
-    
+
     fn next_u64(&mut self) -> u64 {
         self.0.next_u64()
     }

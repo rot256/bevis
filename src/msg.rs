@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug)]
 pub struct Msg<T>(pub(crate) T);
 
-
 /// Messages serialize without overhead
 impl<T: Serialize> Serialize for Msg<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

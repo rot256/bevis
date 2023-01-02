@@ -39,14 +39,10 @@ pub fn impl_absorb(input: &syn::DeriveInput) -> proc_macro::TokenStream {
     fn body(data: &Data) -> TokenStream {
         let fn_name = quote! { ::bevis::Absorb::absorb };
         match data {
-            Data::Union(_) => syn::Error::new(
-                fn_name.span(),
-                "absorb not implemented for union.",
-            )
-            .to_compile_error(),
+            Data::Union(_) => syn::Error::new(fn_name.span(), "absorb not implemented for union.")
+                .to_compile_error(),
 
-            Data::Struct(ref data) => 
-                absorb_fields(fn_name, &data.fields),
+            Data::Struct(ref data) => absorb_fields(fn_name, &data.fields),
 
             Data::Enum(ref data) => {
                 // no need to absorb empty enum

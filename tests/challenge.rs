@@ -1,7 +1,7 @@
 #![allow(clippy::all)]
 #![allow(dead_code)]
 
-use bevis::{Absorb, Arthur, Challenge, Msg, Proof, Sponge, Tx, Transcript};
+use bevis::{Absorb, Arthur, Challenge, Msg, Proof, Sponge, Transcript, Tx};
 
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +9,6 @@ use bevis_strobe as strobe;
 
 #[derive(Deserialize, Serialize)]
 struct U32(u32);
-
 
 #[derive(Serialize, Deserialize, Challenge)]
 struct FieldElem {
@@ -19,7 +18,7 @@ struct FieldElem {
 #[derive(Serialize, Deserialize)]
 struct Round1 {
     a: FieldElem,
-    b: FieldElem
+    b: FieldElem,
 }
 
 /*
@@ -83,18 +82,14 @@ enum V {
 
 #[test]
 fn test() {
-    let  mut ts = strobe::Transcript::new("test");
+    let mut ts = strobe::Transcript::new("test");
     // let mut ts = bevis::TraceTranscript::new(ts);
-
 
     ts.append(&12u32);
 
     let _v: FieldElem = ts.challenge();
 
-  
     ts.append(&_v);
-
-
 
     // println!("{}", ts);
     // println!("{}", ts.transcript());

@@ -1,11 +1,9 @@
-
-use crate::{Absorb, Arthur, CryptoRng, RngCore, Transcript, Tx, Safe};
+use crate::{Absorb, Arthur, CryptoRng, RngCore, Safe, Transcript, Tx};
 
 /// A safe proof is a proof where Fiat-Shamir is
 /// guaranteed to be implemented correctly:
 /// every element in the proof consists of Msg or structs containing Msg.
 pub trait SafeProof: Proof + Tx {}
-
 
 pub trait Proof: Sized {
     type CRS;
