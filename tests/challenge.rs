@@ -1,11 +1,9 @@
 #![allow(clippy::all)]
 #![allow(dead_code)]
 
-use bevis::{Absorb, Arthur, Challenge, Msg, Proof, Sponge, Transcript, Tx};
+use bevis::Challenge;
 
 use serde::{Deserialize, Serialize};
-
-use bevis_strobe as strobe;
 
 #[derive(Deserialize, Serialize)]
 struct U32(u32);
