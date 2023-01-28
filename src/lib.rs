@@ -1,9 +1,7 @@
 #![no_std]
 
 #[cfg(feature = "trace")]
-extern crate alloc;
-
-extern crate bevis_derive;
+use alloc;
 
 pub use rand_core::{CryptoRng, RngCore};
 
@@ -27,8 +25,6 @@ mod safe;
 // safe-proof interface
 #[cfg(feature = "safe")]
 pub use safe::{Arthur, Bevis, Proof, Safe, SafeProof, Tx};
-
-pub use bevis_derive::*;
 
 pub use absorb::{Absorb, Hasher};
 

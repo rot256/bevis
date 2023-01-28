@@ -8,7 +8,6 @@ license = "MIT"
 
 [dependencies]
 rand_core = "^0.6"
-bevis_derive = { version = "0.1.0", path = "bevis_derive" }
 serde = {version = "1", default-features = false }
 
 [features]
