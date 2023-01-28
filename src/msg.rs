@@ -6,13 +6,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug)]
 pub struct Msg<T>(pub(crate) T);
 
-impl <T> From<T> for Msg<T> {
+impl<T> From<T> for Msg<T> {
     fn from(value: T) -> Self {
         Msg(value)
     }
 }
 
-impl <T: Clone> Clone for Msg<T> {
+impl<T: Clone> Clone for Msg<T> {
     fn clone(&self) -> Self {
         Msg(self.0.clone())
     }
