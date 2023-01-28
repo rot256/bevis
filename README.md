@@ -1,11 +1,11 @@
 # Bevis; Fiat-Shamir Without The Hassle
 
-(bevis)[https://en.wiktionary.org/wiki/bevis] (be- +‎ vis) meaning "proof" in the Scandinavian languages,
+[bevis](https://en.wiktionary.org/wiki/bevis) (be- +‎ vis) meaning "proof" in the Scandinavian languages,
 aims to make implementing public-coin arguments in the Rust substantially easier by eliminating repetitive and error prone implementation details of Fiat-Shamir.
 Bevis aims to have minimal dependencies (serde and rand_core) and no/very minimal run-time overhead,
 consisting primarily of a collection of types, traits and procedural macros.
 
-Here is a simplified example of implementing Schnorr using Bevis:
+Here is a simplified example of implementing Schnorr using Bevis and [curve25519-dalek](https://github.com/zkcrypto/curve25519-dalek-ng).
 
 ```rust
 use serde::{Serialize, Deserialize};
