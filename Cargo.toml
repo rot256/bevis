@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Mathias Hall-Andersen"]
 repository = "https://github.com/rot256/bevis"
+license = "MIT"
 
 [dependencies]
 rand_core = "^0.6"
