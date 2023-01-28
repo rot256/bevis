@@ -3,11 +3,12 @@ name = "bevis"
 version = "0.1.0"
 edition = "2021"
 authors = ["Mathias Hall-Andersen"]
+repository = "https://github.com/rot256/bevis"
 
 [dependencies]
+rand_core = "^0.6"
 bevis_derive = { path = "bevis_derive" }
 serde = {version = "1", default-features = false }
-rand_core = "^0.6"
 
 [features]
 safe = []  # safe-proof interface
