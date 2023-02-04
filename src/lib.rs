@@ -10,6 +10,9 @@ mod challenge;
 mod msg;
 mod transcript;
 
+#[cfg(feature = "derive")]
+pub use bevis_derive::*;
+
 // debugging trace transcript
 #[cfg(feature = "trace")]
 mod trace;

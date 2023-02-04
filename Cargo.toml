@@ -1,6 +1,6 @@
 [package]
 name = "bevis"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Mathias Hall-Andersen"]
 repository = "https://github.com/rot256/bevis"
@@ -8,9 +8,11 @@ description = "Fiat-Shamir without the Hassle"
 license = "MIT"
 
 [dependencies]
-rand_core = "^0.6"
 serde = {version = "1", default-features = false }
+rand_core = "^0.6"
+bevis-derive = { version = "0.1", optional = true }
 
 [features]
 safe = []  # safe-proof interface
 trace = [] # tracing transcript for debugging/testing
+derive = ["bevis-derive"]
